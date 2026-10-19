@@ -1,0 +1,68 @@
+{
+    "name": "gcego/registry",
+    "description": "Definition discovery, registration, resolution and production caching for GCEGO Admin Studio.",
+    "type": "library",
+    "keywords": ["gcego", "registry", "discovery", "laravel", "admin"],
+    "homepage": "https://github.com/gcego/registry",
+    "license": "MIT",
+    "authors": [
+        {
+            "name": "Atangageih Leke Collins",
+            "email": "lekeatenga@gmail.com",
+            "role": "Developer"
+        }
+    ],
+    "require": {
+        "php": "^8.3",
+        "gcego/blueprints": "^0.1",
+        "gcego/components": "^0.1",
+        "gcego/core": "^0.1",
+        "illuminate/console": "^13.0",
+        "illuminate/contracts": "^13.0",
+        "illuminate/filesystem": "^13.0",
+        "illuminate/support": "^13.0"
+    },
+    "require-dev": {
+        "larastan/larastan": "^3.0",
+        "laravel/pint": "^1.14",
+        "orchestra/testbench": "^11.0",
+        "pestphp/pest": "^4.0"
+    },
+    "repositories": [
+        {"type": "path", "url": "../components", "options": {"versions": {"gcego/components": "0.1.0"}}},
+        {"type": "path", "url": "../core", "options": {"versions": {"gcego/core": "0.1.0"}}},
+        {"type": "path", "url": "../blueprints", "options": {"versions": {"gcego/blueprints": "0.1.0"}}}
+    ],
+    "autoload": {
+        "psr-4": {
+            "Gcego\\Registry\\": "src/"
+        }
+    },
+    "autoload-dev": {
+        "psr-4": {
+            "Gcego\\Registry\\Tests\\": "tests/"
+        }
+    },
+    "scripts": {
+        "analyse": "vendor/bin/phpstan analyse",
+        "test": "vendor/bin/pest",
+        "test-coverage": "vendor/bin/pest --coverage",
+        "format": "vendor/bin/pint",
+        "benchmark": "@php benchmarks/run.php"
+    },
+    "extra": {
+        "laravel": {
+            "providers": [
+                "Gcego\\Registry\\RegistryServiceProvider"
+            ]
+        }
+    },
+    "config": {
+        "sort-packages": true,
+        "allow-plugins": {
+            "pestphp/pest-plugin": true
+        }
+    },
+    "minimum-stability": "stable",
+    "prefer-stable": true
+}
