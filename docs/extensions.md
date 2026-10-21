@@ -3,7 +3,6 @@
 A kind tells the registry which objects belong to a category, how they are
 named, how they are validated, and which metadata to index. No kinds are built
 in. Applications define and register their own using registry contracts.
-Only `gcego/core:^1.0` is required from the GCEGO ecosystem.
 
 ## Define an application object
 

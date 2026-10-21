@@ -114,9 +114,7 @@ Diagnostic checks: `discovery.root`, `discovery.kind`, `discovery.enabled`,
 
 ## Laravel
 
-Requires PHP 8.3+, Laravel 13 and the published `gcego/core:^1.0` package.
-Composer resolves core without a local path repository.
-
+Requires PHP 8.3+, Laravel 13 and `gcego/core:^1.0`.
 
 - `RegistryServiceProvider` (implements `Gcego\Core\Contracts\PackageInterface`):
   config tag `gcego-registry-config`; commands `gcego:registry-cache` and

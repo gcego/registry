@@ -1,6 +1,6 @@
 # Discovery
 
-## Developer workflow
+## Adding definitions
 
 First register an application-owned `DefinitionKind`, as shown in
 [extensions](extensions.md). No definition kinds are built in.
@@ -16,8 +16,6 @@ Registry::get('module:subjects');
 ```
 
 Once the kind is registered, individual files need no manual registration.
-The local fixtures in `tests/Integration/DeveloperExperienceTest.php` exercise
-this workflow without external definition packages.
 
 When does a new file appear?
 

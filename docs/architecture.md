@@ -10,12 +10,9 @@ identity. It never renders, routes, queries or authorizes anything.
 application definitions ──▶ gcego/registry ──▶ gcego/core ──▶ illuminate/*
 ```
 
-The only GCEGO dependency is `gcego/core:^1.0`. Composer installs its published
-release, which supplies the package lifecycle contracts. Laravel supplies the container, configuration, filesystem
-and console integration. Applications own their `DefinitionKind`
-adapters, validation engines, builder execution and typed resolver bindings.
-The registry starts with no kinds. Tests and benchmarks use local plain PHP
-definitions, and no local Composer path repositories are required.
+The registry integrates with Laravel through `gcego/core`. Applications define
+their own objects and register `DefinitionKind` implementations to supply
+naming, validation and indexed metadata. No definition kinds are built in.
 
 ## Facade and container
 
@@ -41,7 +38,7 @@ identity from two different sources is always an error that names both
 sources. The same identity from the same source is collapsed, which makes
 registration idempotent.
 
-## The PHP-identity problem and the chosen strategy
+## Indexing and lazy loading
 
 A file that returns `new ModuleDefinition(...)` only reveals its name when executed.
 The registry does not try to parse PHP. Instead:
@@ -57,14 +54,13 @@ The registry does not try to parse PHP. Instead:
    returned object must match the recorded kind, name and class, otherwise the
    index is stale and the error says to rebuild.
 
-The cost is that building the index executes every definition file. That is
-acceptable because these files are trusted application code, and it is what
-makes metadata-only lookups free afterwards.
+Building the index executes each definition file. With a valid production
+manifest, metadata lookups read the index without executing those files.
 
 ## Lifecycle
 
 ```text
-register()   bindings only; nothing scanned or loaded
+provider register()  bindings only; nothing scanned or loaded
 first use    Registry::index()
                └─ RegistryManager::load()
                     ├─ cache disabled          → discover + build (strict per config)
@@ -92,30 +88,17 @@ refresh()    forget index and loaded objects; next use repeats "first use"
 | `Cache\FileRegistryCache`, `Manifest` | compiled manifest storage |
 | `Diagnostics\RegistryInspector` | structured diagnostics |
 
-### Decisions and deviations from the plan
-
-- **`RegistryManager` absorbs the planned `RegistryCacheManager`**, because
-  cache policy and index building are one decision.
-- **`DefinitionProvider` replaces the planned `Registrable` and `Discoverable`.**
-  Class-based definitions are explicit: they are listed in configuration or
-  returned by name from a discovered file. Classes are never scanned.
-- **No `ResolutionResult` or `DefinitionLoadResult`.** Resolution returns the
-  definition or throws; build results are `RegistrationResult` and `LoadedIndex`.
-- **Two thin Artisan commands** (`gcego:registry-cache`, `gcego:registry-clear`)
-  exist only so that `php artisan optimize` can build the cache on deploy.
-  Applications can provide richer developer commands.
-- **Registry diagnostics** are exposed through `RegistryInspector`.
-
 ## Long-running workers
 
-`Registry` is a container singleton. It holds the index (immutable
-descriptors) and memoized definition objects. Definitions should be immutable
-application configuration, without request-,
-user- or tenant-specific state. A test confirms
-no `Request` is reachable from the registry after handling requests. The registry service classes hold no static mutable state. Call
-`Registry::refresh()` through the facade or restart workers after
-deploying new definitions; with `cache.verify = false`, run
-`php artisan optimize` first.
+The registry singleton retains its index and resolved definitions for the
+process lifetime. Definitions should be immutable application configuration
+and must not retain request, user or tenant state.
+
+After deploying definition changes, rebuild the manifest with
+`php artisan optimize` and restart long-running workers. Within a running
+process, `Registry::refresh()` clears the loaded index and resolved objects;
+the next lookup follows the configured cache policy. Runtime registrations
+are retained.
 
 ## Security
 

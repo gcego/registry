@@ -5,14 +5,37 @@ definitions. It manages any definition category through application-owned
 `DefinitionKind` adapters, including pages, widgets, layouts, actions,
 navigation, panels, modules and other application definitions.
 
-Register your kind before the registry is first used:
+## Requirements
+
+- PHP 8.3+, Laravel 13
+- `gcego/core` ^1.0
+
+## Installation
+
+```bash
+composer require gcego/registry
+php artisan vendor:publish --tag=gcego-registry-config   # optional
+```
+
+Composer installs `gcego/core` automatically.
+
+The `Gcego\Registry\Facades\Registry` facade resolves the shared registry singleton.
+Constructor injection remains available through `Gcego\Registry\Contracts\RegistryInterface`.
+
+Laravel auto-discovers `Gcego\Registry\RegistryServiceProvider`.
+
+## Quick start
+
+Register your kind in an application service provider before the registry is first used:
 
 ```php
 use App\Definitions\PageKind;
 use Gcego\Registry\Kinds\DefinitionKinds;
 
-$this->app->make(DefinitionKinds::class)
-    ->register(new PageKind);
+public function register(): void
+{
+    $this->app->make(DefinitionKinds::class)->register(new PageKind);
+}
 ```
 
 A definition file returns an object supported by that kind:
@@ -28,33 +51,14 @@ return new PageDefinition(name: 'home', title: 'Home');
 [extensions](docs/extensions.md) for a complete adapter example.
 
 ```php
+use App\Definitions\PageDefinition;
 use Gcego\Registry\Facades\Registry;
 
 Registry::get('page:home');       // validated definition object
 Registry::descriptor('page:home'); // indexed metadata
 Registry::names('page');          // ['home', ...]
-Registry::register($definition);  // runtime registration
+Registry::register(new PageDefinition('reports', 'Reports')); // runtime registration
 ```
-
-## Requirements
-
-- PHP 8.3+, Laravel 13
-- `gcego/core` ^1.0 (the only GCEGO runtime dependency)
-
-## Installation
-
-```bash
-composer require gcego/registry
-php artisan vendor:publish --tag=gcego-registry-config   # optional
-```
-
-`gcego/core:^1.0` is installed through Composer; no local path repository is needed.
-
-The `Gcego\Registry\Facades\Registry` facade resolves the shared registry singleton.
-Constructor injection remains available through `Gcego\Registry\Contracts\RegistryInterface`.
-
-Laravel auto-discovers `Gcego\Registry\RegistryServiceProvider`. The provider
-is also a `gcego/core` package (`gcego/registry`, capability `registry`).
 
 ## Conventions
 
@@ -101,27 +105,13 @@ identities, unsupported kinds and cache state.
 
 | | |
 | --- | --- |
-| [Architecture](docs/architecture.md) | Identity, lifecycle, boundaries, decisions |
+| [Architecture](docs/architecture.md) | Identity, lifecycle and application integration |
 | [Discovery](docs/discovery.md) | Roots, entrypoint conventions, the developer workflow |
 | [Registration](docs/registration.md) | Files, providers, runtime registration, duplicates |
 | [Resolution](docs/resolution.md) | Identifiers, lookup, filtering, lazy loading |
 | [Caching](docs/caching.md) | Manifest format, modes, deployment, safety |
 | [Extensions](docs/extensions.md) | Adding definition kinds |
-| [API reference](docs/api-reference.md) | Every public class and method |
-
-## Development
-
-```bash
-composer check      # release checks
-composer test       # Pest + Testbench
-composer analyse    # PHPStan (Larastan), level max
-composer format     # Pint
-composer benchmark  # discovery, build, manifest I/O, lookups
-```
-
-The package and its test suite use only `gcego/core` from the GCEGO ecosystem.
-Test fixtures are plain local PHP objects. Definition files and providers return
-built objects, and registered kinds own naming, validation and metadata.
+| [API reference](docs/api-reference.md) | Facade, contracts and supporting APIs |
 
 ## License
 
