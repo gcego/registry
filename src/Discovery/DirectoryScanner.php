@@ -89,7 +89,7 @@ final readonly class DirectoryScanner
 
                 $real = realpath($path);
 
-                if ($real === false || ! str_starts_with($real, $realRoot.'/')) {
+                if ($real === false || ! str_starts_with($real, rtrim($realRoot, '\\/').DIRECTORY_SEPARATOR)) {
                     $skipped[] = ['path' => $path, 'reason' => 'resolves outside the discovery root'];
 
                     continue;

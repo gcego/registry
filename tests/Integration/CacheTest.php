@@ -138,6 +138,57 @@ it('never writes a cache from an invalid registry', function (): void {
         ->and(is_file($this->workspace->path('cache/gcego-registry.php')))->toBeFalse();
 });
 
+it('keeps serving the previous cache when a rebuild fails', function (): void {
+    $this->workspace->module('Modules/Subjects/Subjects.php', 'subjects');
+    withCache($this);
+    $this->artisan('gcego:registry-cache')->assertSuccessful();
+
+    $this->workspace->file('Modules/Broken/Broken.php', '<?php return 42;');
+
+    expect(fn () => $this->artisan('gcego:registry-cache'))->toThrow(DefinitionLoadException::class);
+
+    withCache($this);
+
+    expect(app(Registry::class)->names())->toBe(['subjects'])
+        ->and(app(Registry::class)->origin())->toBe('cache');
+});
+
+it('serves but does not cache a partial index when strict is off', function (): void {
+    $this->workspace->module('Modules/Subjects/Subjects.php', 'subjects');
+    $this->workspace->file('Modules/Broken/Broken.php', '<?php return 42;');
+    $this->rebuildApplicationPublic(['cache.enabled' => true, 'cache.verify' => true, 'strict' => false]);
+    $registry = app(Registry::class);
+
+    expect($registry->names())->toBe(['subjects'])
+        ->and($registry->failures())->toHaveCount(1)
+        ->and(is_file($this->workspace->path('cache/gcego-registry.php')))->toBeFalse();
+});
+
+it('rebuilds when a file outside the roots that a definition depends on changes', function (): void {
+    $this->workspace->file('Support/name.php', '<?php return "alpha";');
+    $this->workspace->file('Modules/Subjects/Subjects.php', <<<'PHP'
+        <?php
+
+        return new \Gcego\Registry\Tests\Fixtures\ExampleDefinition(require __DIR__.'/../../Support/name.php');
+        PHP);
+    withCache($this, ['verify' => true]);
+
+    expect(app(Registry::class)->names())->toBe(['alpha']);
+
+    withCache($this, ['verify' => true]);
+
+    expect(app(Registry::class)->origin())->toBe('cache')
+        ->and(app(RegistryManager::class)->status()->fresh)->toBeTrue();
+
+    // Same size, so only the content hash can tell the difference.
+    $this->workspace->file('Support/name.php', '<?php return "gamma";');
+    withCache($this, ['verify' => true]);
+
+    expect(app(RegistryManager::class)->status()->fresh)->toBeFalse()
+        ->and(app(Registry::class)->names())->toBe(['gamma'])
+        ->and(app(Registry::class)->origin())->toBe('discovery');
+});
+
 it('clears the cache through artisan and reports status', function (): void {
     $this->workspace->module('Modules/Subjects/Subjects.php', 'subjects');
     withCache($this);

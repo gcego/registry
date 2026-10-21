@@ -8,10 +8,9 @@ use Gcego\Registry\RegistryConfig;
 it('reads the shipped defaults', function (): void {
     $config = RegistryConfig::fromArray(require dirname(__DIR__, 2).'/config/gcego-registry.php');
 
+    // Generic: no application folders are assumed; packages add their own roots.
     expect($config->discoveryEnabled)->toBeTrue()
-        ->and(array_map(fn ($root): string => $root->kind, $config->roots))->toBe(['module', 'page', 'widget', 'layout', 'action', 'navigation', 'panel'])
-        ->and($config->roots[0]->path)->toEndWith('GCEGo/Modules')
-        ->and($config->roots[0]->entrypoint->strategy)->toBe('directory')
+        ->and($config->roots)->toBe([])
         ->and($config->ignoredDirectories)->toBe(['Tests', 'tests', 'Fixtures', 'fixtures'])
         ->and($config->strict)->toBeTrue()
         ->and($config->cacheEnabled)->toBeTrue()

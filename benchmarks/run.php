@@ -59,7 +59,7 @@ printf("gcego/registry benchmark: %d definitions (+%d helper files), PHP %s, opc
 
 $discovered = $discovery->discover();
 $measure('discovery (scan)', static fn () => $discovery->discover());
-$measure('fingerprint (stat)', static fn () => $discovered->fingerprint());
+$measure('fingerprint (content hash)', static fn () => $discovered->fingerprint());
 
 $result = $registrar->build($discovered);
 $measure('build (load + validate all)', static fn () => $registrar->build($discovered));
