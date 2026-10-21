@@ -34,7 +34,7 @@ final readonly class DiscoveryResult
         }, $this->files);
 
         // PHP files that are not entrypoints are supporting code an entrypoint may include
-        // (gcego/modules' Resources/*.php): editing, adding or removing one changes definitions too.
+        // (such as Resources/*.php): editing, adding or removing one changes definitions too.
         $supporting = [];
 
         foreach ($this->skipped as $skipped) {

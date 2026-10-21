@@ -4,8 +4,6 @@ declare(strict_types=1);
 
 namespace Gcego\Registry\Tests\Fixtures;
 
-use Gcego\Blueprints\Blueprint;
-use Gcego\Components\Property;
 use Gcego\Registry\Contracts\DefinitionProvider;
 use Illuminate\Contracts\Config\Repository;
 
@@ -20,7 +18,7 @@ final readonly class AcademicsProvider implements DefinitionProvider
     {
         $title = $this->config->get('app.name');
 
-        yield new Blueprint('topics', new Property(Blueprint::Title, is_string($title) ? 'Topics of '.$title : 'Topics'));
-        yield new Blueprint('lessons');
+        yield new ExampleDefinition('topics', is_string($title) ? 'Topics of '.$title : 'Topics');
+        yield new ExampleDefinition('lessons');
     }
 }

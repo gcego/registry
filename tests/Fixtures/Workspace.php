@@ -48,22 +48,21 @@ final class Workspace
     }
 
     /**
-     * A definition file returning a blueprint with the given name (counted when executed).
+     * A definition file returning a module with the given name (counted when executed).
      */
-    public function blueprint(string $relative, string $name, string $extra = ''): string
+    public function module(string $relative, string $name, string $extra = ''): string
     {
         return $this->file($relative, <<<PHP
             <?php
 
             declare(strict_types=1);
 
-            use Gcego\\Blueprints\\Blueprint;
-            use Gcego\\Components\\Property;
+            use Gcego\\Registry\\Tests\\Fixtures\\ExampleDefinition;
 
             \\Gcego\\Registry\\Tests\\Fixtures\\LoadCounter::hit(__FILE__);
 
-            return new Blueprint(
-                new Property(Blueprint::Name, '{$name}'),{$extra}
+            return new ExampleDefinition(
+                '{$name}',{$extra}
             );
             PHP);
     }

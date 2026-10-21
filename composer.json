@@ -2,7 +2,13 @@
     "name": "gcego/registry",
     "description": "Definition discovery, registration, resolution and production caching for GCEGO Admin Studio.",
     "type": "library",
-    "keywords": ["gcego", "registry", "discovery", "laravel", "admin"],
+    "keywords": [
+        "gcego",
+        "registry",
+        "discovery",
+        "laravel",
+        "admin"
+    ],
     "homepage": "https://github.com/gcego/registry",
     "license": "MIT",
     "authors": [
@@ -14,9 +20,7 @@
     ],
     "require": {
         "php": "^8.3",
-        "gcego/blueprints": "^0.1",
-        "gcego/components": "^0.1",
-        "gcego/core": "^0.1",
+        "gcego/core": "^1.0",
         "illuminate/console": "^13.0",
         "illuminate/contracts": "^13.0",
         "illuminate/filesystem": "^13.0",
@@ -28,11 +32,6 @@
         "orchestra/testbench": "^11.0",
         "pestphp/pest": "^4.0"
     },
-    "repositories": [
-        {"type": "path", "url": "../components", "options": {"versions": {"gcego/components": "0.1.0"}}},
-        {"type": "path", "url": "../core", "options": {"versions": {"gcego/core": "0.1.0"}}},
-        {"type": "path", "url": "../blueprints", "options": {"versions": {"gcego/blueprints": "0.1.0"}}}
-    ],
     "autoload": {
         "psr-4": {
             "Gcego\\Registry\\": "src/"
@@ -48,7 +47,13 @@
         "test": "vendor/bin/pest",
         "test-coverage": "vendor/bin/pest --coverage",
         "format": "vendor/bin/pint",
-        "benchmark": "@php benchmarks/run.php"
+        "benchmark": "@php benchmarks/run.php",
+        "check": [
+            "@composer validate --strict",
+            "vendor/bin/pint --test",
+            "vendor/bin/phpstan analyse --debug --no-progress",
+            "@test"
+        ]
     },
     "extra": {
         "laravel": {
@@ -64,5 +69,27 @@
         }
     },
     "minimum-stability": "stable",
-    "prefer-stable": true
+    "prefer-stable": true,
+    "archive": {
+        "exclude": [
+            "/vendor",
+            "/build",
+            "/coverage",
+            "/tests",
+            "/benchmarks",
+            "/.github",
+            "/.agents",
+            "/.aws",
+            "/.codex",
+            "/.idea",
+            "/.vscode",
+            "/.env",
+            "/.env.*",
+            "/.phpunit.cache",
+            "/.phpunit.result.cache",
+            "/composer.lock",
+            "/phpunit.xml",
+            "/phpstan.neon"
+        ]
+    }
 }

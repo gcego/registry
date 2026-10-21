@@ -39,7 +39,7 @@ final readonly class DiscoveryPath
         }
 
         if (! is_string($kind) || preg_match(DefinitionIdentity::KindPattern, $kind) !== 1) {
-            throw DiscoveryException::invalidRoot($index, '"kind" must be a definition kind identifier such as "blueprint".');
+            throw DiscoveryException::invalidRoot($index, '"kind" must be a definition kind identifier such as "module".');
         }
 
         if (! is_string($entrypoint)) {

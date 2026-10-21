@@ -2,24 +2,22 @@
 
 declare(strict_types=1);
 
-use Gcego\Blueprints\Blueprint;
-use Gcego\Blueprints\Exceptions\InvalidBlueprintException;
 use Gcego\Registry\Contracts\DefinitionKind;
 use Gcego\Registry\Exceptions\DuplicateDefinitionException;
-use Gcego\Registry\Kinds\BlueprintKind;
 use Gcego\Registry\Kinds\DefinitionKinds;
-use Gcego\Registry\Tests\Fixtures\ExampleTable;
+use Gcego\Registry\Tests\Fixtures\ExampleDefinition;
+use Gcego\Registry\Tests\Fixtures\ExampleKind;
 use Gcego\Registry\Tests\Fixtures\PageDefinition;
 use Gcego\Registry\Tests\Fixtures\PageKind;
-use Gcego\Registry\Tests\Fixtures\SpecialBlueprint;
+use Gcego\Registry\Tests\Fixtures\SpecialDefinition;
 
 it('registers kinds and matches objects by contract', function (): void {
     $kinds = new DefinitionKinds;
-    $kinds->register(new BlueprintKind);
+    $kinds->register(new ExampleKind);
     $kinds->register(new PageKind);
     $kinds->register(new PageKind);
 
-    expect($kinds->ids())->toBe(['blueprint', 'page'])
+    expect($kinds->ids())->toBe(['module', 'page'])
         ->and($kinds->has('page'))->toBeTrue()
         ->and($kinds->get('widget'))->toBeNull()
         ->and(array_map(fn (DefinitionKind $kind): string => $kind->id(), $kinds->matching(new PageDefinition('dashboard'))))->toBe(['page'])
@@ -28,7 +26,7 @@ it('registers kinds and matches objects by contract', function (): void {
 
 it('matches only the most specific kind when contracts extend each other', function (): void {
     $kinds = new DefinitionKinds;
-    $kinds->register(new BlueprintKind);
+    $kinds->register(new ExampleKind);
     $kinds->register(new class implements DefinitionKind
     {
         public function id(): string
@@ -38,7 +36,7 @@ it('matches only the most specific kind when contracts extend each other', funct
 
         public function contract(): string
         {
-            return SpecialBlueprint::class;
+            return SpecialDefinition::class;
         }
 
         public function name(object $definition): string
@@ -57,18 +55,18 @@ it('matches only the most specific kind when contracts extend each other', funct
         }
     });
 
-    expect(array_map(fn (DefinitionKind $kind): string => $kind->id(), $kinds->matching(new SpecialBlueprint('special'))))->toBe(['special'])
-        ->and(array_map(fn (DefinitionKind $kind): string => $kind->id(), $kinds->matching(new Blueprint('subjects'))))->toBe(['blueprint']);
+    expect(array_map(fn (DefinitionKind $kind): string => $kind->id(), $kinds->matching(new SpecialDefinition('special'))))->toBe(['special'])
+        ->and(array_map(fn (DefinitionKind $kind): string => $kind->id(), $kinds->matching(new ExampleDefinition('subjects'))))->toBe(['module']);
 });
 
 it('rejects conflicting and invalid kinds', function (): void {
     $kinds = new DefinitionKinds;
-    $kinds->register(new BlueprintKind);
+    $kinds->register(new ExampleKind);
     $impostor = new class implements DefinitionKind
     {
         public function id(): string
         {
-            return 'blueprint';
+            return 'module';
         }
 
         public function contract(): string
@@ -92,18 +90,18 @@ it('rejects conflicting and invalid kinds', function (): void {
         }
     };
 
-    expect(fn () => $kinds->register($impostor))->toThrow(DuplicateDefinitionException::class, 'Definition kind "blueprint" is already registered');
+    expect(fn () => $kinds->register($impostor))->toThrow(DuplicateDefinitionException::class, 'Definition kind "module" is already registered');
 });
 
-it('delegates blueprint naming, validation and metadata to gcego/blueprints', function (): void {
-    $kind = new BlueprintKind;
-    $valid = new Blueprint('subjects', new ExampleTable('table'));
-    $invalid = new Blueprint('subjects', new ExampleTable('a'), new ExampleTable('b'));
+it('uses the registered kind for naming validation and metadata', function (): void {
+    $kind = new ExampleKind;
+    $valid = new ExampleDefinition('subjects');
+    $invalid = new ExampleDefinition('subjects', '');
 
     expect($kind->name($valid))->toBe('subjects')
         ->and($kind->validate($valid))->toBe([])
-        ->and($kind->validate($invalid))->toBe(['subjects.b: Blueprint "subjects" already has a "table" part at subjects.a; the role allows only one. [blueprint.duplicate_singleton]'])
-        ->and($kind->metadata($valid))->toBe(['title' => 'Subjects', 'slug' => 'subjects', 'description' => null, 'icon' => null, 'roles' => 'table'])
-        ->and(fn () => $kind->name(new Blueprint))->toThrow(InvalidBlueprintException::class)
+        ->and($kind->validate($invalid))->toBe(['title: a module needs a title'])
+        ->and($kind->metadata($valid))->toBe(['title' => 'Subjects'])
+        ->and(fn () => $kind->name(new ExampleDefinition))->toThrow(InvalidArgumentException::class)
         ->and(fn () => $kind->name(new stdClass))->toThrow(InvalidArgumentException::class);
 });

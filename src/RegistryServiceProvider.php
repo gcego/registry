@@ -4,7 +4,6 @@ declare(strict_types=1);
 
 namespace Gcego\Registry;
 
-use Gcego\Blueprints\Contracts\BlueprintResolver;
 use Gcego\Core\Contracts\PackageInterface;
 use Gcego\Core\Packages\PackageDescriptor;
 use Gcego\Registry\Cache\FileRegistryCache;
@@ -16,11 +15,9 @@ use Gcego\Registry\Contracts\RegistryInterface;
 use Gcego\Registry\Discovery\DefinitionDiscovery;
 use Gcego\Registry\Discovery\DirectoryScanner;
 use Gcego\Registry\Discovery\DiscoveryPath;
-use Gcego\Registry\Kinds\BlueprintKind;
 use Gcego\Registry\Kinds\DefinitionKinds;
 use Gcego\Registry\Loading\PhpDefinitionLoader;
 use Gcego\Registry\Resolution\DefinitionResolver;
-use Gcego\Registry\Resolution\RegistryBlueprintResolver;
 use Illuminate\Contracts\Config\Repository;
 use Illuminate\Contracts\Foundation\Application;
 use Illuminate\Support\ServiceProvider;
@@ -46,12 +43,7 @@ final class RegistryServiceProvider extends ServiceProvider implements PackageIn
             return RegistryConfig::fromArray(is_array($config) ? $config : []);
         });
 
-        $this->app->singleton(DefinitionKinds::class, static function (): DefinitionKinds {
-            $kinds = new DefinitionKinds;
-            $kinds->register(new BlueprintKind);
-
-            return $kinds;
-        });
+        $this->app->singleton(DefinitionKinds::class);
 
         $this->app->singleton(DefinitionDiscovery::class, static function (Application $app): DefinitionDiscovery {
             $config = $app->make(RegistryConfig::class);
@@ -79,7 +71,6 @@ final class RegistryServiceProvider extends ServiceProvider implements PackageIn
         $this->app->singleton(RegistryManager::class);
         $this->app->singleton(Registry::class);
         $this->app->alias(Registry::class, RegistryInterface::class);
-        $this->app->singleton(BlueprintResolver::class, RegistryBlueprintResolver::class);
     }
 
     public function boot(): void

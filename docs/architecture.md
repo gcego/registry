@@ -7,28 +7,33 @@ The registry manages definitions: it finds them, loads them, validates them
 identity. It never renders, routes, queries or authorizes anything.
 
 ```text
-gcego/registry ──▶ gcego/blueprints ──▶ gcego/components
-       │
-       └────────▶ gcego/core ──▶ illuminate/*
+application definitions ──▶ gcego/registry ──▶ gcego/core ──▶ illuminate/*
 ```
 
-| From | The registry uses |
-| --- | --- |
-| `gcego/components` | nothing directly; blueprints validate through it |
-| `gcego/blueprints` | `BlueprintInterface`, `identity()`, `metadata()`, `roles()`, `BlueprintValidator`, and the `BlueprintResolver` contract it implements |
-| `gcego/core` | `PackageInterface`: the provider is the `gcego/registry` package with capability `registry` |
-| Laravel | container (provider DI, singletons), config repository, `Filesystem::replace()`, console commands and `optimizes()` |
+The only GCEGO dependency is `gcego/core:^1.0`. Composer installs its published
+release, which supplies the package lifecycle contracts. Laravel supplies the container, configuration, filesystem
+and console integration. Applications own their `DefinitionKind`
+adapters, validation engines, builder execution and typed resolver bindings.
+The registry starts with no kinds. Tests and benchmarks use local plain PHP
+definitions, and no local Composer path repositories are required.
+
+## Facade and container
+
+Application examples use `Gcego\Registry\Facades\Registry`. Laravel resolves
+its calls to the `Gcego\Registry\Registry` singleton. Constructor injection
+through `Gcego\Registry\Contracts\RegistryInterface` uses that same instance.
+The facade adds no separate definition index or cache.
 
 ## Identity
 
 ```text
-kind:name          blueprint:subjects
-kind:scope.name    blueprint:admin.subjects
+kind:name          module:subjects
+kind:scope.name    module:admin.subjects
 ```
 
 - **kind:** chosen by the discovery root or matched by contract.
 - **name:** read from the definition itself, through the kind
-  (`Blueprint::identity()`), never from the file path.
+  (for example, an application definition's `name()` method), never from the file path.
 - **scope:** optional, set per root (for example a future panel).
 
 All parts are lowercase identifiers, so comparison is exact. The same
@@ -38,7 +43,7 @@ registration idempotent.
 
 ## The PHP-identity problem and the chosen strategy
 
-A file that returns `new Blueprint(...)` only reveals its name when executed.
+A file that returns `new ModuleDefinition(...)` only reveals its name when executed.
 The registry does not try to parse PHP. Instead:
 
 1. **Build/index phase.** Discovery lists entrypoints by path convention. Each
@@ -74,7 +79,8 @@ refresh()    forget index and loaded objects; next use repeats "first use"
 
 | Class | Role |
 | --- | --- |
-| `Registry` | public API; holds the index and memoized definitions |
+| `Facades\Registry` | application facade for the shared registry |
+| `Registry` | service implementing `RegistryInterface`; holds the index and memoized definitions |
 | `RegistryManager` | cache and discovery policy, rebuild, status, fingerprint |
 | `RegistryConfig` | validated view of `config('gcego-registry')` |
 | `Discovery\DefinitionDiscovery`, `DirectoryScanner`, `DiscoveryPath`, `Entrypoint` | scanning by convention |
@@ -82,7 +88,7 @@ refresh()    forget index and loaded objects; next use repeats "first use"
 | `Registration\DefinitionRegistrar` | load, check, name, validate, describe, detect duplicates |
 | `Resolution\DefinitionResolver` | lazy loading with stale detection |
 | `Index\DefinitionIndex`, `DefinitionDescriptor`, `DefinitionSource` | immutable index |
-| `Kinds\DefinitionKinds`, `BlueprintKind` | definition kind registry |
+| `Kinds\DefinitionKinds` | definition kind registry |
 | `Cache\FileRegistryCache`, `Manifest` | compiled manifest storage |
 | `Diagnostics\RegistryInspector` | structured diagnostics |
 
@@ -97,17 +103,17 @@ refresh()    forget index and loaded objects; next use repeats "first use"
   definition or throws; build results are `RegistrationResult` and `LoadedIndex`.
 - **Two thin Artisan commands** (`gcego:registry-cache`, `gcego:registry-clear`)
   exist only so that `php artisan optimize` can build the cache on deploy.
-  Richer developer commands belong to `gcego/cli`.
-- **`gcego/core` diagnostics are not extended.** Core has no extension point
-  for them, so the registry exposes its own `RegistryInspector`.
+  Applications can provide richer developer commands.
+- **Registry diagnostics** are exposed through `RegistryInspector`.
 
 ## Long-running workers
 
 `Registry` is a container singleton. It holds the index (immutable
-descriptors) and memoized definition objects (immutable components). Both are
-framework-wide, never request-, user- or tenant-specific, and a test confirms
-no `Request` is reachable from the registry after handling requests. No class
-in `src/` has static properties. Call `refresh()` or restart workers after
+descriptors) and memoized definition objects. Definitions should be immutable
+application configuration, without request-,
+user- or tenant-specific state. A test confirms
+no `Request` is reachable from the registry after handling requests. The registry service classes hold no static mutable state. Call
+`Registry::refresh()` through the facade or restart workers after
 deploying new definitions; with `cache.verify = false`, run
 `php artisan optimize` first.
 

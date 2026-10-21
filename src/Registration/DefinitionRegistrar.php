@@ -22,8 +22,7 @@ use Throwable;
  * Builds a DefinitionIndex from discovered entrypoints and provider classes.
  *
  * Every definition is loaded once, checked against its kind's contract,
- * named by its kind, and validated by its kind (which delegates to
- * gcego/blueprints / gcego/components). In strict mode the first problem
+ * named and validated by its registered kind. In strict mode the first problem
  * throws; otherwise problems are collected and the source is skipped.
  */
 final readonly class DefinitionRegistrar

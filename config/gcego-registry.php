@@ -24,10 +24,10 @@ return [
         //   a regex     - matched against the path relative to the root
         // Optional: "scope" (prefixes identities, e.g. "admin") and
         // "required" (throw when the directory is missing).
-        // Roots whose kind is not registered yet are ignored until a GCEGO
-        // package that provides the kind is installed.
+        // Roots whose kind is not registered are ignored until the application
+        // registers a matching DefinitionKind.
         'roots' => [
-            ['path' => app_path('GCEGo/Modules'), 'kind' => 'blueprint', 'entrypoint' => 'directory'],
+            ['path' => app_path('GCEGo/Modules'), 'kind' => 'module', 'entrypoint' => 'directory'],
             ['path' => app_path('GCEGo/Pages'), 'kind' => 'page', 'entrypoint' => 'file'],
             ['path' => app_path('GCEGo/Widgets'), 'kind' => 'widget', 'entrypoint' => 'file'],
             ['path' => app_path('GCEGo/Layouts'), 'kind' => 'layout', 'entrypoint' => 'file'],

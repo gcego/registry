@@ -23,7 +23,7 @@ function withCache(TestCase $test, array $cache = []): void
 }
 
 it('builds the cache on first use and then serves metadata without loading files', function (): void {
-    $this->workspace->blueprint('Modules/Subjects/Subjects.php', 'subjects');
+    $this->workspace->module('Modules/Subjects/Subjects.php', 'subjects');
     withCache($this);
 
     expect(app(Registry::class)->names())->toBe(['subjects'])
@@ -46,11 +46,11 @@ it('builds the cache on first use and then serves metadata without loading files
 });
 
 it('does not see new files in production until the cache is rebuilt', function (): void {
-    $this->workspace->blueprint('Modules/Subjects/Subjects.php', 'subjects');
+    $this->workspace->module('Modules/Subjects/Subjects.php', 'subjects');
     withCache($this);
     app(Registry::class)->names();
 
-    $this->workspace->blueprint('Modules/Topics/Topics.php', 'topics');
+    $this->workspace->module('Modules/Topics/Topics.php', 'topics');
     withCache($this);
 
     expect(app(Registry::class)->names())->toBe(['subjects']);
@@ -62,7 +62,7 @@ it('does not see new files in production until the cache is rebuilt', function (
 });
 
 it('rebuilds automatically when verification detects changes', function (): void {
-    $this->workspace->blueprint('Modules/Subjects/Subjects.php', 'subjects');
+    $this->workspace->module('Modules/Subjects/Subjects.php', 'subjects');
     withCache($this, ['verify' => true]);
     app(Registry::class)->names();
 
@@ -73,7 +73,7 @@ it('rebuilds automatically when verification detects changes', function (): void
         ->and(app(Registry::class)->origin())->toBe('cache')
         ->and(LoadCounter::total())->toBe(0);
 
-    $this->workspace->blueprint('Modules/Topics/Topics.php', 'topics');
+    $this->workspace->module('Modules/Topics/Topics.php', 'topics');
     withCache($this, ['verify' => true]);
 
     expect(app(Registry::class)->names())->toBe(['subjects', 'topics'])
@@ -81,11 +81,11 @@ it('rebuilds automatically when verification detects changes', function (): void
 });
 
 it('reports stale entries when a cached file disappears or changes identity', function (): void {
-    $path = $this->workspace->blueprint('Modules/Subjects/Subjects.php', 'subjects');
+    $path = $this->workspace->module('Modules/Subjects/Subjects.php', 'subjects');
     withCache($this);
     app(Registry::class)->names();
 
-    $this->workspace->blueprint('Modules/Subjects/Subjects.php', 'courses');
+    $this->workspace->module('Modules/Subjects/Subjects.php', 'courses');
     withCache($this);
 
     expect(fn () => app(Registry::class)->get('subjects'))->toThrow(DefinitionLoadException::class, 'no longer does. Rebuild the registry cache');
@@ -103,7 +103,7 @@ it('fails clearly when the cache is required but missing', function (): void {
 });
 
 it('rebuilds a corrupt cache, or fails under the fail policy', function (): void {
-    $this->workspace->blueprint('Modules/Subjects/Subjects.php', 'subjects');
+    $this->workspace->module('Modules/Subjects/Subjects.php', 'subjects');
     $this->workspace->file('cache/gcego-registry.php', '<?php return [');
 
     withCache($this);
@@ -117,7 +117,7 @@ it('rebuilds a corrupt cache, or fails under the fail policy', function (): void
 });
 
 it('reuses a manifest written by a concurrent rebuild', function (): void {
-    $this->workspace->blueprint('Modules/Subjects/Subjects.php', 'subjects');
+    $this->workspace->module('Modules/Subjects/Subjects.php', 'subjects');
     withCache($this);
     $manager = app(RegistryManager::class);
     $manager->rebuild();
@@ -139,7 +139,7 @@ it('never writes a cache from an invalid registry', function (): void {
 });
 
 it('clears the cache through artisan and reports status', function (): void {
-    $this->workspace->blueprint('Modules/Subjects/Subjects.php', 'subjects');
+    $this->workspace->module('Modules/Subjects/Subjects.php', 'subjects');
     withCache($this);
     $this->artisan('gcego:registry-cache')->expectsOutputToContain('GCEGO registry cached: 1 definition(s).')->assertSuccessful();
 

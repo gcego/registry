@@ -2,17 +2,28 @@
 
 ## Developer workflow
 
-1. Create `app/GCEGo/Modules/Academics/Subjects/Subjects.php`, returning a `Blueprint` named `subjects`.
-2. Use it: `app(Registry::class)->blueprint('subjects')`.
+First register an application-owned `DefinitionKind`, as shown in
+[extensions](extensions.md). No definition kinds are built in.
 
-There is nothing to register. The test
-`tests/Integration/DeveloperExperienceTest.php` exercises exactly this.
+1. Create `app/GCEGo/Modules/Academics/Subjects/Subjects.php`, returning your
+   application's `ModuleDefinition` named `subjects`.
+2. Resolve the definition through the facade:
+
+```php
+use Gcego\Registry\Facades\Registry;
+
+Registry::get('module:subjects');
+```
+
+Once the kind is registered, individual files need no manual registration.
+The local fixtures in `tests/Integration/DeveloperExperienceTest.php` exercise
+this workflow without external definition packages.
 
 When does a new file appear?
 
 | Setting | When |
 | --- | --- |
-| `cache.enabled = false` | on the next process (or after `refresh()`) |
+| `cache.enabled = false` | on the next process (or after `Registry::refresh()`) |
 | `cache.enabled = true`, `cache.verify = true` (non-production default) | on the next process; the fingerprint changes and the cache rebuilds |
 | `cache.enabled = true`, `cache.verify = false` (production) | after `php artisan optimize` (or `gcego:registry-cache`) |
 
@@ -22,9 +33,9 @@ When does a new file appear?
 'discovery' => [
     'enabled' => true,
     'roots' => [
-        ['path' => app_path('GCEGo/Modules'), 'kind' => 'blueprint', 'entrypoint' => 'directory'],
+        ['path' => app_path('GCEGo/Modules'), 'kind' => 'module', 'entrypoint' => 'directory'],
         ['path' => app_path('GCEGo/Pages'), 'kind' => 'page', 'entrypoint' => 'file'],
-        ['path' => base_path('modules/admin'), 'kind' => 'blueprint', 'entrypoint' => 'directory', 'scope' => 'admin', 'required' => true],
+        ['path' => base_path('modules/admin'), 'kind' => 'module', 'entrypoint' => 'directory', 'scope' => 'admin', 'required' => true],
     ],
     'ignore' => ['Tests', 'tests', 'Fixtures', 'fixtures'],
 ],
@@ -35,11 +46,12 @@ When does a new file appear?
 | `path` | the directory to scan (required) |
 | `kind` | the definition kind of its entrypoints (required) |
 | `entrypoint` | `directory`, `file`, or a regular expression (default `file`) |
-| `scope` | prefix for identities: `blueprint:admin.subjects` |
+| `scope` | prefix for identities: `module:admin.subjects` |
 | `required` | throw `DiscoveryException` when the directory is missing (default `false`) |
 
-Roots are scanned in configuration order. A root configured twice is scanned
-once, and a file reachable from two nested roots belongs to the first one. A
+Roots are scanned in configuration order. A root configured twice for the same kind is scanned once. The same folder
+can serve different kinds with different entrypoint conventions. For the same
+kind, a file reachable from nested roots belongs to the first matching root. A
 root whose kind is not registered is skipped and reported by the inspector.
 
 ## Entrypoint conventions
@@ -70,6 +82,7 @@ Entrypoints are ordered by root (configuration order), then by relative path
 ## Fingerprint
 
 `DiscoveryResult::fingerprint()` hashes the roots plus each entrypoint's kind,
-scope, path, size and modification time. `RegistryManager` adds providers and
+scope, path, size and modification time, including supporting PHP files beneath
+the discovery roots. `RegistryManager` adds providers and
 registered kinds. A changed fingerprint means the cache is stale. Computing it
 lists directories and stats files; it never includes them.

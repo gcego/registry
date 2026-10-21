@@ -15,7 +15,7 @@ use Throwable;
  * duplicates, unsupported kinds and cache state.
  *
  * It performs a full, non-strict build without writing the cache, so it is
- * meant for tooling (gcego/cli, health pages), not for ordinary requests.
+ * meant for tooling and health pages, not for ordinary requests.
  * It never throws.
  */
 final readonly class RegistryInspector

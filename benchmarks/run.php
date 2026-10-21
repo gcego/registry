@@ -17,11 +17,11 @@ use Gcego\Registry\Cache\FileRegistryCache;
 use Gcego\Registry\Cache\Manifest;
 use Gcego\Registry\Discovery\DefinitionDiscovery;
 use Gcego\Registry\Discovery\DiscoveryPath;
-use Gcego\Registry\Kinds\BlueprintKind;
 use Gcego\Registry\Kinds\DefinitionKinds;
 use Gcego\Registry\Loading\PhpDefinitionLoader;
 use Gcego\Registry\Registration\DefinitionRegistrar;
 use Gcego\Registry\Resolution\DefinitionResolver;
+use Gcego\Registry\Tests\Fixtures\ExampleKind;
 use Illuminate\Container\Container;
 
 require __DIR__.'/../vendor/autoload.php';
@@ -33,7 +33,7 @@ $root = sys_get_temp_dir().'/gcego-registry-bench-'.bin2hex(random_bytes(4));
 for ($index = 0; $index < $count; $index++) {
     $directory = sprintf('%s/Modules/Group%d/Feature%d', $root, $index % 20, $index);
     mkdir($directory, 0777, true);
-    file_put_contents($directory.'/Feature'.$index.'.php', "<?php\n\nreturn new Gcego\\Blueprints\\Blueprint('feature-{$index}');\n");
+    file_put_contents($directory.'/Feature'.$index.'.php', "<?php\n\nreturn new Gcego\\Registry\\Tests\\Fixtures\\ExampleDefinition('feature-{$index}');\n");
     file_put_contents($directory.'/Table.php', "<?php\n\nthrow new RuntimeException('helper files are never loaded');\n");
 }
 
@@ -48,8 +48,8 @@ $measure = static function (string $label, Closure $operation, int $operations =
 };
 
 $kinds = new DefinitionKinds;
-$kinds->register(new BlueprintKind);
-$roots = [DiscoveryPath::fromConfig(0, ['path' => $root.'/Modules', 'kind' => 'blueprint', 'entrypoint' => 'directory'])];
+$kinds->register(new ExampleKind);
+$roots = [DiscoveryPath::fromConfig(0, ['path' => $root.'/Modules', 'kind' => 'module', 'entrypoint' => 'directory'])];
 $discovery = new DefinitionDiscovery($roots);
 $loader = new PhpDefinitionLoader(new Container, [$root.'/Modules']);
 $registrar = new DefinitionRegistrar($kinds, $loader);
@@ -85,10 +85,10 @@ $measure(sprintf('%d identity lookups', $lookups), static function () use ($inde
         throw new RuntimeException('Lookup mismatch.');
     }
 }, $lookups);
-$measure('filter by kind', static fn () => $index->ofKind('blueprint'));
+$measure('filter by kind', static fn () => $index->ofKind('module'));
 
 $resolver = new DefinitionResolver($loader, $kinds);
-$descriptor = $index->get('blueprint:feature-0');
+$descriptor = $index->get('module:feature-0');
 
 if ($descriptor !== null) {
     $measure('lazy resolve one (load + validate)', static fn () => $resolver->resolve($descriptor));

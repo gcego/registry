@@ -4,7 +4,6 @@ declare(strict_types=1);
 
 namespace Gcego\Registry\Loading;
 
-use Gcego\Components\Contracts\Buildable;
 use Gcego\Registry\Contracts\DefinitionLoader;
 use Gcego\Registry\Contracts\DefinitionProvider;
 use Gcego\Registry\Exceptions\DefinitionLoadException;
@@ -88,10 +87,6 @@ final readonly class PhpDefinitionLoader implements DefinitionLoader
             throw DefinitionLoadException::output($real);
         }
 
-        if ($result instanceof Buildable) {
-            $result = $result->build();
-        }
-
         if (is_string($result)) {
             return $this->loadProvider($result, $source, $expand);
         }
@@ -130,7 +125,7 @@ final readonly class PhpDefinitionLoader implements DefinitionLoader
                     throw DefinitionLoadException::invalidReturn($source, get_debug_type($definition));
                 }
 
-                $definitions[] = $definition instanceof Buildable ? $definition->build() : $definition;
+                $definitions[] = $definition;
             }
         } catch (DefinitionLoadException $exception) {
             throw $exception;

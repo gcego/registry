@@ -5,7 +5,7 @@ declare(strict_types=1);
 namespace Gcego\Registry\Tests\Fixtures;
 
 /**
- * A non-component definition type, standing in for a future gcego/pages page.
+ * A plain local page definition used to test a second kind.
  */
 final readonly class PageDefinition
 {

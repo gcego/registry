@@ -60,8 +60,7 @@ final readonly class DefinitionDiscovery
                 throw DiscoveryException::notADirectory($root->path);
             }
 
-            // One folder may hold several kinds (gcego/modules' Module.php files live in the default
-            // blueprint folder); the same folder configured twice for one kind is scanned once.
+            // One folder may hold several kinds (with distinct entrypoint conventions); the same folder configured twice for one kind is scanned once.
             $key = $real."\0".$root->kind."\0".($root->scope ?? '');
 
             if (isset($seenRoots[$key])) {

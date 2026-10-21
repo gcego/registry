@@ -30,7 +30,7 @@ final class DefinitionKinds
         $id = $kind->id();
 
         if (preg_match(DefinitionIdentity::KindPattern, $id) !== 1) {
-            throw InvalidDefinitionException::invalidIdentity($id, 'kind identifiers must be lowercase identifiers such as "blueprint".');
+            throw InvalidDefinitionException::invalidIdentity($id, 'kind identifiers must be lowercase identifiers such as "module".');
         }
 
         if (! interface_exists($kind->contract()) && ! class_exists($kind->contract())) {
@@ -69,9 +69,8 @@ final class DefinitionKinds
     /**
      * Kinds whose contract the object implements, in registration order.
      *
-     * When one matching contract extends another (gcego/pages' Page is a
-     * Blueprint), only the most specific kind matches: a page is a "page",
-     * not also a "blueprint".
+     * When one matching contract extends another, only the most specific
+     * kind matches.
      *
      * @return list<DefinitionKind>
      */

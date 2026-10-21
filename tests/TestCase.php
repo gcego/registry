@@ -5,7 +5,9 @@ declare(strict_types=1);
 namespace Gcego\Registry\Tests;
 
 use Gcego\Core\GcegoServiceProvider;
+use Gcego\Registry\Kinds\DefinitionKinds;
 use Gcego\Registry\RegistryServiceProvider;
+use Gcego\Registry\Tests\Fixtures\ExampleKind;
 use Gcego\Registry\Tests\Fixtures\LoadCounter;
 use Gcego\Registry\Tests\Fixtures\Workspace;
 use Illuminate\Foundation\Application;
@@ -26,6 +28,8 @@ abstract class TestCase extends Orchestra
         LoadCounter::reset();
 
         parent::setUp();
+
+        $this->app->make(DefinitionKinds::class)->register(new ExampleKind);
     }
 
     protected function tearDown(): void
@@ -44,6 +48,7 @@ abstract class TestCase extends Orchestra
     {
         $this->registryConfig = $config;
         $this->refreshApplication();
+        $this->app->make(DefinitionKinds::class)->register(new ExampleKind);
 
         /** @var Application */
         return $this->app;
@@ -59,13 +64,14 @@ abstract class TestCase extends Orchestra
 
     protected function getPackageProviders($app): array
     {
+
         return [GcegoServiceProvider::class, RegistryServiceProvider::class];
     }
 
     protected function defineEnvironment($app): void
     {
         $app['config']->set('gcego-registry.discovery.roots', [
-            ['path' => $this->workspace->path('Modules'), 'kind' => 'blueprint', 'entrypoint' => 'directory'],
+            ['path' => $this->workspace->path('Modules'), 'kind' => 'module', 'entrypoint' => 'directory'],
             ['path' => $this->workspace->path('Pages'), 'kind' => 'page', 'entrypoint' => 'file'],
         ]);
         $app['config']->set('gcego-registry.cache.enabled', false);

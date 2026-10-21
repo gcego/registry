@@ -4,7 +4,7 @@
 
 | Form | Example | Meaning |
 | --- | --- | --- |
-| qualified | `blueprint:subjects`, `blueprint:admin.subjects` | exact identity |
+| qualified | `module:subjects`, `module:admin.subjects` | exact identity |
 | bare name | `subjects` | the only unscoped definition with that name, of any kind |
 
 A bare name that matches several unscoped definitions throws
@@ -12,30 +12,39 @@ A bare name that matches several unscoped definitions throws
 definition throws `DefinitionNotFoundException` with "Did you mean"
 suggestions.
 
-## Metadata only (no file is executed)
+## Metadata lookup
 
 ```php
-$registry->has('subjects');
-$registry->descriptor('subjects');   // DefinitionDescriptor
-$registry->descriptor('subjects')->metadata;   // ['title' => ..., 'slug' => ..., 'roles' => 'table,action', ...]
-$registry->names();                  // all names, index order
-$registry->names('blueprint');
-$registry->count();
-$registry->count('page');
-$registry->kinds();
-$registry->descriptors(kind: 'blueprint');
-$registry->descriptors(scope: 'admin');      // '' selects unscoped definitions
-$registry->descriptors(sourceType: SourceType::Provider);
-$registry->descriptors(location: '/full/path/Subjects.php');
-$registry->index();                  // the immutable DefinitionIndex
+use Gcego\Registry\Facades\Registry;
+use Gcego\Registry\Index\SourceType;
+
+Registry::has('subjects');
+Registry::descriptor('subjects');   // DefinitionDescriptor
+Registry::descriptor('subjects')->metadata;   // ['title' => 'Subject Management']
+Registry::names();                  // all names, index order
+Registry::names('module');
+Registry::count();
+Registry::count('page');
+Registry::kinds();
+Registry::descriptors(kind: 'module');
+Registry::descriptors(scope: 'admin');      // '' selects unscoped definitions
+Registry::descriptors(sourceType: SourceType::Provider);
+Registry::descriptors(location: '/full/path/Subjects.php');
+Registry::index();                  // the immutable DefinitionIndex
 ```
+
+Metadata lookups do not load definition objects once the index is available.
+The first lookup may execute definition files to build or rebuild that index;
+with a valid production manifest, metadata comes directly from the cache.
 
 ## Loading
 
 ```php
-$registry->get('subjects');                              // object
-$registry->get('subjects', BlueprintInterface::class);   // typed; InvalidDefinitionException if not an instance
-$registry->blueprint('subjects');                        // BlueprintInterface
+use App\Definitions\ModuleDefinition;
+use Gcego\Registry\Facades\Registry;
+
+Registry::get('subjects');                              // object
+Registry::get('subjects', ModuleDefinition::class);   // typed; InvalidDefinitionException if not an instance
 ```
 
 `get()` loads a definition at most once per process:
@@ -54,20 +63,17 @@ $registry->blueprint('subjects');                        // BlueprintInterface
 Definitions loaded while the index was being built are reused, so in
 development nothing is executed twice.
 
-## For runtimes: `BlueprintResolver`
+## Typed resolution
 
-The container binds `Gcego\Blueprints\Contracts\BlueprintResolver` to
-`RegistryBlueprintResolver`, which covers the registry's unscoped blueprints:
-
-```php
-public function __construct(private BlueprintResolver $blueprints) {}
-
-$this->blueprints->has('subjects');
-$this->blueprints->resolve('subjects');
-$this->blueprints->names();
-```
+Use `Registry::get($identity, $expectedClass)` to check the resolved type.
+Applications can wrap this API in their own resolver contract and bind
+that adapter in their service provider. The registry binds no package-specific
+resolvers.
 
 ## Refreshing
 
-`$registry->refresh()` forgets the index and loaded definitions; the next call
+`Registry::refresh()` forgets the index and loaded definitions; the next call
 reloads them according to the cache policy. Runtime registrations are kept.
+
+For constructor injection, type-hint `Gcego\Registry\Contracts\RegistryInterface`.
+It resolves the same singleton used by the facade.

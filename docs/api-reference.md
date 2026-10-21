@@ -1,15 +1,28 @@
 # API reference
 
+Use `Gcego\Registry\Facades\Registry` for static facade calls. It resolves the
+same singleton as `Gcego\Registry\Registry` and `RegistryInterface`.
+
 All classes live under `Gcego\Registry`.
 
-## `Registry` (final, implements `Contracts\RegistryInterface`)
+## `Facades\Registry` and the registry service
+
+```php
+use Gcego\Registry\Facades\Registry;
+
+Registry::has('page:home');
+Registry::get('page:home');
+```
+
+`Facades\Registry` extends Laravel's `Facade` and forwards the methods below
+to the final `Gcego\Registry\Registry` service, which implements
+`Contracts\RegistryInterface`. Use the contract for constructor injection.
 
 | Method | Description |
 | --- | --- |
 | `has(string $identifier): bool` | qualified or bare; never throws |
 | `descriptor(string $identifier): DefinitionDescriptor` | metadata only; throws `DefinitionNotFoundException` |
 | `get(string $identifier, ?class-string $expected = null): object` | lazy, validated, memoized |
-| `blueprint(string $name): BlueprintInterface` | `get('blueprint:'.$name, BlueprintInterface::class)` |
 | `descriptors(?string $kind, ?string $scope, ?SourceType $sourceType, ?string $location): list<DefinitionDescriptor>` | filters; `scope: ''` means unscoped |
 | `names(?string $kind = null): list<string>` | |
 | `count(?string $kind = null): int` | |
@@ -59,13 +72,14 @@ All classes live under `Gcego\Registry`.
 | Class | Members |
 | --- | --- |
 | `Contracts\DefinitionLoader` | `load(DefinitionSource): list<object>` |
-| `Loading\PhpDefinitionLoader` | `load()`, `loadFile(string)`, `loadProvider(string $class)`, `isTrusted(string $realPath)` |
+| `Loading\PhpDefinitionLoader` | `load()`, `loadFile(string $path, bool $expand = true)`, `loadProvider(string $class, ?string $via = null, bool $expand = true)`, `expand(list<object>, string $source)`, `isTrusted(string $realPath)` |
+| `Contracts\DerivesDefinitions` | `derivedDefinitions(): iterable<object>`; derived objects share the parent source and scope |
+| `Loading\DerivedDefinitions` | `static expand(list<object>, string $source, int $depth = 0): list<object>` |
 | `Contracts\DefinitionProvider` | `definitions(): iterable<object>` |
 | `Registration\DefinitionRegistrar` | `build(DiscoveryResult, list<class-string> $providers = [], bool $strict = true): RegistrationResult`, `describe(object, DefinitionKind, DefinitionSource, ?string $scope)`, `kindFor(object, DefinitionSource)` |
 | `Registration\RegistrationResult` | public `index`, `definitions`, `failures`, `unsupported` |
 | `Registration\RegistrationFailure` | public `source`, `exception`; `toArray()` |
 | `Resolution\DefinitionResolver` | `resolve(DefinitionDescriptor): object` |
-| `Resolution\RegistryBlueprintResolver` | implements `Gcego\Blueprints\Contracts\BlueprintResolver` |
 | `LoadedIndex` | public `index`, `origin`, `definitions`, `failures` |
 
 ## Kinds
@@ -74,7 +88,6 @@ All classes live under `Gcego\Registry`.
 | --- | --- |
 | `Contracts\DefinitionKind` | `id()`, `contract()`, `name(object)`, `validate(object)`, `metadata(object)` |
 | `Kinds\DefinitionKinds` | `register()`, `has()`, `get()`, `ids()`, `matching(object)` |
-| `Kinds\BlueprintKind` | the built-in `blueprint` kind; constant `Id` |
 
 ## Cache
 
@@ -101,13 +114,17 @@ Diagnostic checks: `discovery.root`, `discovery.kind`, `discovery.enabled`,
 
 ## Laravel
 
+Requires PHP 8.3+, Laravel 13 and the published `gcego/core:^1.0` package.
+Composer resolves core without a local path repository.
+
+
 - `RegistryServiceProvider` (implements `Gcego\Core\Contracts\PackageInterface`):
   config tag `gcego-registry-config`; commands `gcego:registry-cache` and
   `gcego:registry-clear`, registered with `optimize` / `optimize:clear`.
 - Singletons: `Registry` (alias `RegistryInterface`), `RegistryManager`,
   `RegistryConfig`, `DefinitionKinds`, `DefinitionDiscovery`,
   `PhpDefinitionLoader` (alias `DefinitionLoader`), `FileRegistryCache` (alias
-  `RegistryCache`), `DefinitionResolver` and `BlueprintResolver`.
+  `RegistryCache`) and `DefinitionResolver`.
   `DefinitionRegistrar` and `RegistryInspector` are autowired.
 
 ## Exceptions (all implement `Exceptions\RegistryException`)

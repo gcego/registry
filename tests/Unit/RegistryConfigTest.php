@@ -9,7 +9,7 @@ it('reads the shipped defaults', function (): void {
     $config = RegistryConfig::fromArray(require dirname(__DIR__, 2).'/config/gcego-registry.php');
 
     expect($config->discoveryEnabled)->toBeTrue()
-        ->and(array_map(fn ($root): string => $root->kind, $config->roots))->toBe(['blueprint', 'page', 'widget', 'layout', 'action', 'navigation', 'panel'])
+        ->and(array_map(fn ($root): string => $root->kind, $config->roots))->toBe(['module', 'page', 'widget', 'layout', 'action', 'navigation', 'panel'])
         ->and($config->roots[0]->path)->toEndWith('GCEGo/Modules')
         ->and($config->roots[0]->entrypoint->strategy)->toBe('directory')
         ->and($config->ignoredDirectories)->toBe(['Tests', 'tests', 'Fixtures', 'fixtures'])
@@ -19,7 +19,7 @@ it('reads the shipped defaults', function (): void {
 });
 
 it('disables roots when discovery is off', function (): void {
-    $config = RegistryConfig::fromArray(['discovery' => ['enabled' => 'false', 'roots' => [['path' => '/x', 'kind' => 'blueprint']]]]);
+    $config = RegistryConfig::fromArray(['discovery' => ['enabled' => 'false', 'roots' => [['path' => '/x', 'kind' => 'module']]]]);
 
     expect($config->discoveryEnabled)->toBeFalse()
         ->and($config->roots)->toHaveCount(1)

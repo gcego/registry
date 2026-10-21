@@ -4,7 +4,6 @@ declare(strict_types=1);
 
 namespace Gcego\Registry;
 
-use Gcego\Blueprints\Contracts\BlueprintInterface;
 use Gcego\Registry\Contracts\DerivesDefinitions;
 use Gcego\Registry\Contracts\RegistryInterface;
 use Gcego\Registry\Exceptions\DefinitionNotFoundException;
@@ -15,7 +14,6 @@ use Gcego\Registry\Index\DefinitionDescriptor;
 use Gcego\Registry\Index\DefinitionIndex;
 use Gcego\Registry\Index\DefinitionSource;
 use Gcego\Registry\Index\SourceType;
-use Gcego\Registry\Kinds\BlueprintKind;
 use Gcego\Registry\Loading\DerivedDefinitions;
 use Gcego\Registry\Registration\DefinitionRegistrar;
 use Gcego\Registry\Registration\RegistrationFailure;
@@ -83,14 +81,6 @@ final class Registry implements RegistryInterface
         }
 
         return $definition;
-    }
-
-    /**
-     * The unscoped blueprint with the given name.
-     */
-    public function blueprint(string $name): BlueprintInterface
-    {
-        return $this->get(BlueprintKind::Id.':'.$name, BlueprintInterface::class);
     }
 
     public function descriptors(?string $kind = null, ?string $scope = null, ?SourceType $sourceType = null, ?string $location = null): array

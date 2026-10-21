@@ -11,7 +11,7 @@ use Stringable;
  * The logical identity of a registered definition: kind, optional scope, name.
  *
  * String form: "kind:name" or "kind:scope.name", for example
- * "blueprint:subjects" or "blueprint:admin.subjects". Every part is
+ * "module:subjects" or "module:admin.subjects". Every part is
  * lowercase, so identities compare exactly. Identity never depends on file
  * paths: the name comes from the definition itself.
  */
@@ -29,7 +29,7 @@ final readonly class DefinitionIdentity implements Stringable
         public ?string $scope = null,
     ) {
         if (preg_match(self::KindPattern, $kind) !== 1) {
-            throw InvalidDefinitionException::invalidIdentity($this->toString(), sprintf('kind "%s" must be a lowercase identifier such as "blueprint".', $kind));
+            throw InvalidDefinitionException::invalidIdentity($this->toString(), sprintf('kind "%s" must be a lowercase identifier such as "module".', $kind));
         }
 
         if (preg_match(self::NamePattern, $name) !== 1 || strlen($name) > 100) {

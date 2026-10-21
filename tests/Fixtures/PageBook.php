@@ -7,7 +7,7 @@ namespace Gcego\Registry\Tests\Fixtures;
 use Gcego\Registry\Contracts\DerivesDefinitions;
 
 /**
- * A definition that brings pages with it (as a gcego/modules module does).
+ * A local definition that derives page definitions.
  */
 final readonly class PageBook implements DerivesDefinitions
 {

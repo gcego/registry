@@ -18,7 +18,7 @@ final readonly class DefinitionDescriptor
 {
     /**
      * @param  class-string  $class  The class of the definition object.
-     * @param  array<string, string|int|float|bool|null>  $metadata  Kind-specific metadata (for blueprints: title, slug, ...).
+     * @param  array<string, string|int|float|bool|null>  $metadata  Kind-specific metadata (for modules: title, slug, ...).
      */
     public function __construct(
         public DefinitionIdentity $identity,

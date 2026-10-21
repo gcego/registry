@@ -1,5 +1,8 @@
 # Caching
 
+Examples that call `Registry::refresh()` use the
+`Gcego\Registry\Facades\Registry` facade.
+
 ## Configuration
 
 ```php
@@ -54,13 +57,13 @@ return [
     'fingerprint' => '…sha256…',
     'definitions' => [
         [
-            'identity' => 'blueprint:subjects',
-            'kind' => 'blueprint',
+            'identity' => 'module:subjects',
+            'kind' => 'module',
             'name' => 'subjects',
             'scope' => null,
             'source' => ['type' => 'file', 'location' => '/var/www/app/GCEGo/Modules/Academics/Subjects/Subjects.php'],
-            'class' => 'Gcego\\Blueprints\\Blueprint',
-            'metadata' => ['title' => 'Subject Management', 'slug' => 'subjects', 'description' => null, 'icon' => null, 'roles' => ''],
+            'class' => 'App\\Definitions\\ModuleDefinition',
+            'metadata' => ['title' => 'Subject Management'],
         ],
     ],
     'checksum' => '…sha256 of format, fingerprint and definitions…',
@@ -84,7 +87,12 @@ machine (or in the image) that serves it.
 ## Status
 
 ```php
+use Gcego\Registry\RegistryManager;
+
 app(RegistryManager::class)->status()->toArray();
 // ['enabled' => true, 'path' => ..., 'exists' => true, 'valid' => true, 'fresh' => true,
 //  'generatedAt' => '...', 'definitions' => 12, 'problem' => null]
 ```
+
+`RegistryManager` manages the manifest; the facade handles definition access.
+The metadata keys come from the registered application kind.

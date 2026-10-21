@@ -6,3 +6,15 @@
 /phpunit.xml.dist   export-ignore
 /phpstan.neon.dist  export-ignore
 /.editorconfig      export-ignore
+/.github export-ignore
+/.agents export-ignore
+/.aws export-ignore
+/.codex export-ignore
+/build export-ignore
+/coverage export-ignore
+/vendor export-ignore
+/composer.lock export-ignore
+/.phpunit.cache export-ignore
+/.phpunit.result.cache export-ignore
+/.env export-ignore
+/.env.* export-ignore

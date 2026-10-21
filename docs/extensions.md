@@ -1,91 +1,143 @@
 # Definition kinds
 
-The registry is generic: a **kind** tells it which objects belong to a
-category, how they are named, validated and described. `blueprint` is built
-in; future packages (pages, widgets, panels, ...) add theirs.
+A kind tells the registry which objects belong to a category, how they are
+named, how they are validated, and which metadata to index. No kinds are built
+in. Applications define and register their own using registry contracts.
+Only `gcego/core:^1.0` is required from the GCEGO ecosystem.
 
-## The contract
+## Define an application object
 
 ```php
-interface DefinitionKind
+<?php // app/Definitions/PageDefinition.php
+
+namespace App\Definitions;
+
+final readonly class PageDefinition
 {
-    public function id(): string;                        // "page"
-    public function contract(): string;                  // class-string every definition implements
-    public function name(object $definition): string;    // read from the definition
-    public function validate(object $definition): array; // list<string> errors; delegate to the definition's engine
-    public function metadata(object $definition): array; // scalar metadata indexed without loading
+    public function __construct(
+        public string $name,
+        public string $title,
+    ) {}
 }
 ```
 
-`tests/Fixtures/PageKind.php` is a working example over a plain value class:
+## Implement a kind
 
 ```php
+<?php // app/Definitions/PageKind.php
+
+namespace App\Definitions;
+
+use Gcego\Registry\Contracts\DefinitionKind;
+use InvalidArgumentException;
+
 final readonly class PageKind implements DefinitionKind
 {
-    public function id(): string { return 'page'; }
-    public function contract(): string { return PageDefinition::class; }
-    public function name(object $definition): string { return $this->page($definition)->name; }
+    public function id(): string
+    {
+        return 'page';
+    }
+
+    public function contract(): string
+    {
+        return PageDefinition::class;
+    }
+
+    public function name(object $definition): string
+    {
+        return $this->page($definition)->name;
+    }
+
     public function validate(object $definition): array
     {
-        return $this->page($definition)->title === '' ? ['title: a page needs a title'] : [];
+        return $this->page($definition)->title === ''
+            ? ['title: a page needs a title']
+            : [];
     }
-    public function metadata(object $definition): array { return ['title' => $this->page($definition)->title]; }
-    // ...
+
+    public function metadata(object $definition): array
+    {
+        return ['title' => $this->page($definition)->title];
+    }
+
+    private function page(object $definition): PageDefinition
+    {
+        return $definition instanceof PageDefinition
+            ? $definition
+            : throw new InvalidArgumentException('Expected a page definition.');
+    }
 }
 ```
 
-## Registering a kind
+The contract must be an existing class or interface. Validation returns a list
+of readable errors. Metadata keys are application-defined, and values must be
+strings, integers, floats, booleans or null.
 
-Register it in your package provider's `register()` method, before the
-registry is first used. Resolving `DefinitionKinds` is cheap and loads nothing:
+## Register the kind
+
+Add the kind in your application service provider before the registry is first
+used. Resolving `DefinitionKinds` does not scan or load definition files:
 
 ```php
+use App\Definitions\PageKind;
+use Gcego\Registry\Kinds\DefinitionKinds;
+
 public function register(): void
 {
     $this->app->make(DefinitionKinds::class)->register(new PageKind);
 }
 ```
 
-Do not use `afterResolving()` for this. If `DefinitionKinds` has already been
-resolved, Laravel never calls the callback and the kind would silently be
-missing. If the registry's index was built before your kind was registered,
-call `Registry::refresh()`.
+The default configuration already maps `app/GCEGo/Pages` to `page`.
+A file in that directory can now return a `PageDefinition`:
 
-The default configuration already points `app/GCEGo/Pages` at the `page` kind,
-so applications need no configuration change once your package is installed.
+```php
+<?php // app/GCEGo/Pages/home.php
 
-Rules:
+use App\Definitions\PageDefinition;
 
-- **Identifiers:** kind ids are lowercase identifiers.
-- **Contracts:** a kind's contract must exist.
-- **Duplicates:** registering the same kind class twice is a no-op; a different
-  class claiming the same id throws `DuplicateDefinitionException`.
-- **Fingerprint:** registered kind ids are part of the cache fingerprint.
-  Installing a new kind therefore makes a verified cache rebuild; in production,
-  run `php artisan optimize`.
+return new PageDefinition('home', 'Home');
+```
 
-## Choosing a kind for an object
+Resolve it through the facade:
 
-- **Discovered files:** the root's `kind` decides, and the object must
-  implement its contract.
-- **Providers and runtime registrations:** the single kind whose contract the
-  object implements. No match, or an ambiguous match, is an
-  `InvalidDefinitionException`.
+```php
+use App\Definitions\PageDefinition;
+use Gcego\Registry\Facades\Registry;
 
-## Validation adapters
+Registry::get('page:home', PageDefinition::class);
+Registry::descriptor('page:home')->metadata; // ['title' => 'Home']
+```
 
-A kind should delegate validation to its definition's own engine. The built-in
-`BlueprintKind` calls `gcego/blueprints`' `BlueprintValidator` and formats each
-error as `path: message [code]`, so the registry never duplicates component or
-blueprint rules.
+Register kinds directly rather than through an `afterResolving()` callback
+that could miss an already-resolved instance. If the registry index was built
+before a new kind was registered, call `Registry::refresh()` using the facade.
 
+## Registration rules
 
-## Definitions that derive definitions
+- Kind ids are lowercase identifiers.
+- Registering the same kind class twice is a no-op.
+- A different class claiming an existing id throws `DuplicateDefinitionException`.
+- Registered kind ids contribute to the cache fingerprint. Rebuild production
+  manifests with `php artisan optimize` after adding a kind.
+- Discovery roots choose the kind, and returned objects must satisfy its contract.
+- Providers and runtime registrations match kinds by contract. The most specific
+  matching contract wins; no match or equally specific matches are errors.
 
-A definition implementing `Gcego\Registry\Contracts\DerivesDefinitions` returns further definitions from `derivedDefinitions()`. gcego/modules uses this: a module derives the pages of its resources.
+## Derived definitions
 
-- **Indexing:** each derived definition is indexed under its own kind, matched by contract, with the same source and scope as its parent.
-- **Loading:** it is loaded lazily by loading the source again and deriving.
-- **Runtime registration:** `Registry::register()` registers the derived definitions together with their parent.
+A definition implementing `Gcego\Registry\Contracts\DerivesDefinitions` returns
+additional objects from `derivedDefinitions()`. For example, a catalog can derive
+its pages. Each derived object needs a registered kind.
 
-Deriving must be pure and deterministic. A derived definition with an identity that already exists is a duplicate, like any other.
+- Indexing assigns each derived definition its own identity, with its parent's
+  source and scope.
+- Lazy resolution reloads the source and derives the objects again.
+- `Registry::register()` registers derived objects together with their parent.
+
+Derivation must be deterministic and must not depend on request state.
+Duplicate identities are rejected. Expansion supports at most three levels.
+
+Definition files and providers return built objects; the registry does not
+execute builders. Applications can wrap `Registry::get($identity, $expectedClass)`
+in their own typed resolver, or inject `RegistryInterface` into services.

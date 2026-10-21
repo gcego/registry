@@ -2,7 +2,6 @@
 
 declare(strict_types=1);
 
-use Gcego\Blueprints\Blueprint;
 use Gcego\Registry\Cache\FileRegistryCache;
 use Gcego\Registry\Cache\Manifest;
 use Gcego\Registry\Identity\DefinitionIdentity;
@@ -10,10 +9,11 @@ use Gcego\Registry\Index\DefinitionDescriptor;
 use Gcego\Registry\Index\DefinitionIndex;
 use Gcego\Registry\Index\DefinitionSource;
 use Gcego\Registry\Registry;
+use Gcego\Registry\Tests\Fixtures\ExampleDefinition;
 
 it('discovers and registers hundreds of definitions', function (): void {
     for ($index = 0; $index < 300; $index++) {
-        $this->workspace->blueprint(sprintf('Modules/Group%d/Feature%d/Feature%d.php', $index % 10, $index, $index), 'feature-'.$index);
+        $this->workspace->module(sprintf('Modules/Group%d/Feature%d/Feature%d.php', $index % 10, $index, $index), 'feature-'.$index);
     }
 
     $start = hrtime(true);
@@ -29,7 +29,7 @@ it('looks up and filters thousands of cached descriptors quickly', function (): 
     $descriptors = [];
 
     for ($index = 0; $index < 5000; $index++) {
-        $descriptors[] = new DefinitionDescriptor(new DefinitionIdentity($index % 2 === 0 ? 'blueprint' : 'page', 'd'.$index), DefinitionSource::file('/app/d'.$index.'.php'), Blueprint::class, ['title' => 'D'.$index]);
+        $descriptors[] = new DefinitionDescriptor(new DefinitionIdentity($index % 2 === 0 ? 'module' : 'page', 'd'.$index), DefinitionSource::file('/app/d'.$index.'.php'), ExampleDefinition::class, ['title' => 'D'.$index]);
     }
 
     $cache = new FileRegistryCache($this->workspace->path('cache/perf.php'));
@@ -39,7 +39,7 @@ it('looks up and filters thousands of cached descriptors quickly', function (): 
     $index = $cache->read()?->index;
 
     for ($lookup = 0; $lookup < 10000; $lookup++) {
-        $index?->get('blueprint:d'.(($lookup * 2) % 5000));
+        $index?->get('module:d'.(($lookup * 2) % 5000));
     }
 
     $pages = $index?->ofKind('page') ?? [];

@@ -2,7 +2,6 @@
 
 declare(strict_types=1);
 
-use Gcego\Blueprints\Contracts\BlueprintResolver;
 use Gcego\Core\Gcego;
 use Gcego\Registry\Cache\FileRegistryCache;
 use Gcego\Registry\Contracts\DefinitionLoader;
@@ -18,8 +17,9 @@ use Gcego\Registry\RegistryConfig;
 use Gcego\Registry\RegistryManager;
 use Gcego\Registry\RegistryServiceProvider;
 use Gcego\Registry\Resolution\DefinitionResolver;
-use Gcego\Registry\Resolution\RegistryBlueprintResolver;
+use Illuminate\Config\Repository;
 use Illuminate\Contracts\Container\Container;
+use Illuminate\Foundation\Application;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Route;
 use Illuminate\Support\ServiceProvider;
@@ -37,7 +37,6 @@ it('resolves every service', function (string $abstract, string $concrete): void
     [RegistryCache::class, FileRegistryCache::class],
     [DefinitionResolver::class, DefinitionResolver::class],
     [DefinitionRegistrar::class, DefinitionRegistrar::class],
-    [BlueprintResolver::class, RegistryBlueprintResolver::class],
     [RegistryInspector::class, RegistryInspector::class],
 ]);
 
@@ -49,8 +48,12 @@ it('aliases the contract to the registry', function (): void {
     expect(app(RegistryInterface::class))->toBe(app(Registry::class));
 });
 
-it('registers the blueprint kind by default', function (): void {
-    expect(app(DefinitionKinds::class)->ids())->toBe(['blueprint']);
+it('starts without package-specific kinds', function (): void {
+    $app = new Application(dirname(__DIR__, 2));
+    $app->instance('config', new Repository);
+    $app->register(RegistryServiceProvider::class);
+
+    expect($app->make(DefinitionKinds::class)->ids())->toBe([]);
 });
 
 it('merges and publishes configuration', function (): void {
@@ -136,8 +139,8 @@ function reachable(object $root): array
 }
 
 it('keeps no request state between requests', function (): void {
-    $this->workspace->blueprint('Modules/Subjects/Subjects.php', 'subjects');
-    Route::get('/probe', fn () => ['title' => app(Registry::class)->blueprint('subjects')->title()]);
+    $this->workspace->module('Modules/Subjects/Subjects.php', 'subjects');
+    Route::get('/probe', fn () => ['title' => app(Registry::class)->get('module:'.'subjects')->title()]);
 
     $registry = app(Registry::class);
     $this->get('/probe?user=alice')->assertOk()->assertJson(['title' => 'Subjects']);

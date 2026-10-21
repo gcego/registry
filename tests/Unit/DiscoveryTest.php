@@ -9,7 +9,7 @@ use Gcego\Registry\Discovery\DiscoveryPath;
 use Gcego\Registry\Discovery\Entrypoint;
 use Gcego\Registry\Exceptions\DiscoveryException;
 
-function root(string $path, string $entrypoint = 'directory', string $kind = 'blueprint', bool $required = false): DiscoveryPath
+function root(string $path, string $entrypoint = 'directory', string $kind = 'module', bool $required = false): DiscoveryPath
 {
     return DiscoveryPath::fromConfig(0, ['path' => $path, 'kind' => $kind, 'entrypoint' => $entrypoint, 'required' => $required]);
 }
@@ -95,7 +95,7 @@ it('scans multiple roots in order and deduplicates roots and files', function ()
 
     expect(array_map(fn (DiscoveredFile $file): string => $file->root->kind.':'.$file->relativePath, $result->files))->toBe([
         'page:Dashboard.php',
-        'blueprint:Subjects/Subjects.php',
+        'module:Subjects/Subjects.php',
     ])
         ->and(array_column($result->skipped, 'reason'))->toContain('root already configured')
         ->and(array_column($result->skipped, 'reason'))->toContain('already discovered under another root');
@@ -107,12 +107,12 @@ it('scans one folder for several kinds, each with its own entrypoint rule', func
 
     $result = (new DefinitionDiscovery([
         root($this->workspace->path('Modules')),
-        root($this->workspace->path('Modules'), '#(^|/)Module\.php$#', 'module'),
+        root($this->workspace->path('Modules'), '#(^|/)Module\.php$#', 'catalog'),
     ]))->discover();
 
     expect(array_map(fn (DiscoveredFile $file): string => $file->root->kind.':'.$file->relativePath, $result->files))->toBe([
-        'blueprint:Subjects/Subjects.php',
-        'module:Academics/Module.php',
+        'module:Subjects/Subjects.php',
+        'catalog:Academics/Module.php',
     ])->and(array_column($result->skipped, 'reason'))->not->toContain('root already configured');
 });
 
@@ -132,11 +132,11 @@ it('skips missing optional roots and fails on required or invalid ones', functio
 it('validates root configuration', function (array $config, string $message): void {
     expect(fn () => DiscoveryPath::fromConfig('modules', $config))->toThrow(DiscoveryException::class, $message);
 })->with([
-    [['kind' => 'blueprint'], '"path" must be a non-empty string'],
+    [['kind' => 'module'], '"path" must be a non-empty string'],
     [['path' => '/x', 'kind' => 'Blue Print'], '"kind" must be a definition kind identifier'],
-    [['path' => '/x', 'kind' => 'blueprint', 'entrypoint' => '(unclosed'], 'entrypoint must be "directory", "file" or a valid regular expression'],
-    [['path' => '/x', 'kind' => 'blueprint', 'scope' => 'Admin'], '"scope" must be lowercase'],
-    [['path' => '/x', 'kind' => 'blueprint', 'required' => 'yes'], '"required" must be a boolean'],
+    [['path' => '/x', 'kind' => 'module', 'entrypoint' => '(unclosed'], 'entrypoint must be "directory", "file" or a valid regular expression'],
+    [['path' => '/x', 'kind' => 'module', 'scope' => 'Admin'], '"scope" must be lowercase'],
+    [['path' => '/x', 'kind' => 'module', 'required' => 'yes'], '"required" must be a boolean'],
 ]);
 
 it('fingerprints supporting files an entrypoint includes', function (): void {

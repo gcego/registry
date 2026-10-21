@@ -2,7 +2,6 @@
 
 declare(strict_types=1);
 
-use Gcego\Blueprints\Blueprint;
 use Gcego\Registry\Cache\FileRegistryCache;
 use Gcego\Registry\Cache\Manifest;
 use Gcego\Registry\Exceptions\RegistryCacheException;
@@ -10,11 +9,12 @@ use Gcego\Registry\Identity\DefinitionIdentity;
 use Gcego\Registry\Index\DefinitionDescriptor;
 use Gcego\Registry\Index\DefinitionIndex;
 use Gcego\Registry\Index\DefinitionSource;
+use Gcego\Registry\Tests\Fixtures\ExampleDefinition;
 
 function manifest(): Manifest
 {
     return new Manifest(
-        new DefinitionIndex(new DefinitionDescriptor(DefinitionIdentity::fromString('blueprint:subjects'), DefinitionSource::file('/app/Subjects.php'), Blueprint::class, ['title' => 'Subjects'])),
+        new DefinitionIndex(new DefinitionDescriptor(DefinitionIdentity::fromString('module:subjects'), DefinitionSource::file('/app/Subjects.php'), ExampleDefinition::class, ['title' => 'Subjects'])),
         'fingerprint-1',
         '2026-10-17T00:00:00Z',
     );

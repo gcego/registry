@@ -5,7 +5,7 @@ declare(strict_types=1);
 namespace Gcego\Registry\Contracts;
 
 /**
- * A category of definitions the registry can hold (blueprint, page, widget, ...).
+ * A category of definitions the registry can hold (module, page, widget, ...).
  *
  * Future GCEGO packages register their own kinds; the registry never guesses
  * kinds from class names. A kind decides which objects belong to it, how
@@ -14,7 +14,7 @@ namespace Gcego\Registry\Contracts;
 interface DefinitionKind
 {
     /**
-     * Lowercase identifier used in identities ("blueprint" in "blueprint:subjects").
+     * Lowercase identifier used in identities ("module" in "module:subjects").
      */
     public function id(): string;
 

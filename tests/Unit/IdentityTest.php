@@ -14,23 +14,23 @@ it('formats and parses identities', function (string $string, string $kind, stri
         ->and($identity->toString())->toBe($string)
         ->and((string) $identity)->toBe($string);
 })->with([
-    ['blueprint:subjects', 'blueprint', 'subjects', null],
+    ['module:subjects', 'module', 'subjects', null],
     ['page:dashboard', 'page', 'dashboard', null],
-    ['blueprint:admin.subjects', 'blueprint', 'subjects', 'admin'],
+    ['module:admin.subjects', 'module', 'subjects', 'admin'],
     ['module:academics.subjects', 'module', 'subjects', 'academics'],
     ['widget:school.staff.statistics', 'widget', 'statistics', 'school.staff'],
-    ['blueprint:past_papers', 'blueprint', 'past_papers', null],
+    ['module:past_papers', 'module', 'past_papers', null],
 ]);
 
 it('rejects invalid identities', function (string $identity): void {
     DefinitionIdentity::fromString($identity);
-})->with(['subjects', 'Blueprint:subjects', 'blueprint:Subjects', 'blueprint:', ':subjects', 'blueprint:a..b', 'blueprint:sub jects', 'blue print:x'])
+})->with(['subjects', 'ExampleDefinition:subjects', 'module:Subjects', 'module:', ':subjects', 'module:a..b', 'module:sub jects', 'blue print:x'])
     ->throws(InvalidDefinitionException::class, 'Invalid definition identity');
 
 it('compares identities exactly', function (): void {
-    expect((new DefinitionIdentity('blueprint', 'subjects'))->equals(DefinitionIdentity::fromString('blueprint:subjects')))->toBeTrue()
-        ->and((new DefinitionIdentity('blueprint', 'subjects'))->equals(new DefinitionIdentity('page', 'subjects')))->toBeFalse()
-        ->and((new DefinitionIdentity('blueprint', 'subjects', 'admin'))->equals(new DefinitionIdentity('blueprint', 'subjects')))->toBeFalse()
+    expect((new DefinitionIdentity('module', 'subjects'))->equals(DefinitionIdentity::fromString('module:subjects')))->toBeTrue()
+        ->and((new DefinitionIdentity('module', 'subjects'))->equals(new DefinitionIdentity('page', 'subjects')))->toBeFalse()
+        ->and((new DefinitionIdentity('module', 'subjects', 'admin'))->equals(new DefinitionIdentity('module', 'subjects')))->toBeFalse()
         ->and(DefinitionIdentity::isQualified('subjects'))->toBeFalse()
-        ->and(DefinitionIdentity::isQualified('blueprint:subjects'))->toBeTrue();
+        ->and(DefinitionIdentity::isQualified('module:subjects'))->toBeTrue();
 });
