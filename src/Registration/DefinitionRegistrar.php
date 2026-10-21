@@ -5,6 +5,7 @@ declare(strict_types=1);
 namespace Gcego\Registry\Registration;
 
 use Gcego\Registry\Contracts\DefinitionKind;
+use Gcego\Registry\Discovery\DiscoveryPath;
 use Gcego\Registry\Discovery\DiscoveryResult;
 use Gcego\Registry\Exceptions\DuplicateDefinitionException;
 use Gcego\Registry\Exceptions\InvalidDefinitionException;
@@ -70,16 +71,16 @@ final readonly class DefinitionRegistrar
         };
 
         foreach ($discovery->files as $file) {
-            $kind = $this->kinds->get($file->root->kind);
+            $candidates = array_values(array_filter($file->roots(), fn (DiscoveryPath $root): bool => $this->kinds->has($root->kind)));
 
-            if ($kind === null) {
+            if ($candidates === []) {
                 $unsupported[] = ['path' => $file->path, 'kind' => $file->root->kind];
 
                 continue;
             }
 
             $source = DefinitionSource::file($file->path);
-            $register($source->toString(), fn (): array => $this->describeAll($this->loader->loadFile($file->path, false), $kind, $source, $file->root->scope));
+            $register($source->toString(), fn (): array => $this->describeFile($this->loader->loadFile($file->path, false), $candidates, $source));
         }
 
         foreach ($providers as $provider) {
@@ -88,6 +89,38 @@ final readonly class DefinitionRegistrar
         }
 
         return new RegistrationResult(new DefinitionIndex(...array_values($descriptors)), $definitions, $failures, $unsupported);
+    }
+
+    /**
+     * Describe a discovered file's definitions. With one candidate root its
+     * kind applies (as before); with several, each definition takes the first
+     * candidate whose kind contract it implements.
+     *
+     * @param  list<object>  $definitions
+     * @param  non-empty-list<DiscoveryPath>  $candidates  Roots with a registered kind, in configuration order.
+     * @return list<array{DefinitionDescriptor, object}>
+     *
+     * @throws RegistryException
+     */
+    private function describeFile(array $definitions, array $candidates, DefinitionSource $source): array
+    {
+        $entries = [];
+
+        foreach ($definitions as $definition) {
+            $root = $candidates[0];
+
+            foreach ($candidates as $candidate) {
+                if (is_a($definition, $this->kinds->get($candidate->kind)?->contract() ?? '')) {
+                    $root = $candidate;
+
+                    break;
+                }
+            }
+
+            $entries = [...$entries, ...$this->describeAll([$definition], $this->kinds->get($root->kind), $source, $root->scope)];
+        }
+
+        return $entries;
     }
 
     /**

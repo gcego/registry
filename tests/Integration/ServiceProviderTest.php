@@ -155,9 +155,11 @@ it('keeps no request state between requests', function (): void {
 
 it('keeps no static mutable state in its own classes', function (): void {
     $iterator = new RecursiveIteratorIterator(new RecursiveDirectoryIterator(dirname(__DIR__, 2).'/src', FilesystemIterator::SKIP_DOTS));
+    // ClassEntrypoints mirrors PHP's process-wide class table (a class is declared once per process), so its state must be process-wide too.
+    $processState = realpath(dirname(__DIR__, 2).'/src/Loading/ClassEntrypoints.php');
 
     foreach ($iterator as $file) {
-        if ($file instanceof SplFileInfo && $file->getExtension() === 'php') {
+        if ($file instanceof SplFileInfo && $file->getExtension() === 'php' && $file->getRealPath() !== $processState) {
             expect((string) file_get_contents($file->getPathname()))->not->toMatch('/(private|protected|public)\s+static\s+(?!function)/');
         }
     }
