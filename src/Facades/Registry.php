@@ -11,7 +11,7 @@ use Gcego\Registry\Registration\RegistrationFailure;
 use Illuminate\Support\Facades\Facade;
 
 /**
- * @method static bool has(string $identifier)
+ * @method static bool has(string $identifier).
  * @method static DefinitionDescriptor descriptor(string $identifier)
  * @method static object get(string $identifier, ?string $expected = null)
  * @method static list<DefinitionDescriptor> descriptors(?string $kind = null, ?string $scope = null, ?SourceType $sourceType = null, ?string $location = null)
