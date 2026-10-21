@@ -10,3 +10,5 @@ phpstan.neon
 /.vscode
 /README.md
 /docs/
+/LICENSE.md
+/CHANGELOG.md
