@@ -53,6 +53,34 @@ class DefinitionLoadException extends RuntimeException implements RegistryExcept
         return new self(sprintf('%s does not exist or does not implement Gcego\\Registry\\Contracts\\DefinitionProvider.', $class));
     }
 
+    public static function classConflict(string $path, string $class, string $declaredIn): self
+    {
+        return new self(sprintf(
+            'Definition file %s declares %s, which is already declared by %s. Class names must be unique.',
+            $path,
+            $class,
+            $declaredIn,
+        ));
+    }
+
+    public static function reloadRequired(string $path): self
+    {
+        return new self(sprintf(
+            'Definition file %s changed after its classes were loaded in this PHP process, and PHP cannot declare a class twice. Restart the process (queue workers, Octane) to load the new version.',
+            $path,
+        ));
+    }
+
+    public static function ambiguousClassEntrypoint(string $path, int $providers): self
+    {
+        return new self(sprintf(
+            'Definition file %s declares classes but did not return a definition, and it declares %d %s classes, so the registry cannot tell which one it provides. Return the class name: `return Subjects::class;`.',
+            $path,
+            $providers,
+            'Gcego\\Registry\\Contracts\\DefinitionProvider',
+        ));
+    }
+
     public static function stale(string $identity, string $source): self
     {
         return new self(sprintf(

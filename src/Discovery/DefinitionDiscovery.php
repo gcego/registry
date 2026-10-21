@@ -11,7 +11,8 @@ use Gcego\Registry\Exceptions\DiscoveryException;
  *
  * Roots are processed in configuration order. A root configured twice (same
  * real path) is scanned once, and a file reachable from two nested roots is
- * attributed to the first root only.
+ * attributed to the first root only. When roots of different kinds match the
+ * same file, the later ones are recorded as alternatives of that file.
  */
 final readonly class DefinitionDiscovery
 {
@@ -76,16 +77,18 @@ final readonly class DefinitionDiscovery
 
             foreach ($result['files'] as $file) {
                 if (isset($seenFiles[$file->path])) {
+                    $index = $seenFiles[$file->path];
+                    $files[$index] = $files[$index]->withAlternative($root);
                     $skipped[] = ['path' => $file->path, 'reason' => 'already discovered under another root'];
 
                     continue;
                 }
 
-                $seenFiles[$file->path] = true;
+                $seenFiles[$file->path] = count($files);
                 $files[] = $file;
             }
         }
 
-        return new DiscoveryResult($files, $skipped, $scanned, $missing);
+        return new DiscoveryResult(array_values($files), $skipped, $scanned, $missing);
     }
 }
