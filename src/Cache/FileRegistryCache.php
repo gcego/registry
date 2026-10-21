@@ -18,6 +18,8 @@ use Throwable;
  * and reads verify structure and checksum before use. Writes go to a
  * temporary file that is renamed into place, so concurrent readers never see
  * a partial manifest; rebuilds are serialized with an exclusive file lock.
+ * The ".lock" file is kept on purpose: deleting it while another process
+ * waits on it would let two rebuilds run at once.
  */
 final readonly class FileRegistryCache implements RegistryCache
 {
@@ -87,9 +89,13 @@ final readonly class FileRegistryCache implements RegistryCache
             throw RegistryCacheException::unwritable($this->path.'.lock');
         }
 
-        try {
-            flock($handle, LOCK_EX);
+        if (! flock($handle, LOCK_EX)) {
+            fclose($handle);
 
+            throw RegistryCacheException::unlockable($this->path.'.lock');
+        }
+
+        try {
             return $callback();
         } finally {
             flock($handle, LOCK_UN);

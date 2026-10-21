@@ -15,6 +15,7 @@ use Gcego\Registry\Contracts\RegistryInterface;
 use Gcego\Registry\Discovery\DefinitionDiscovery;
 use Gcego\Registry\Discovery\DirectoryScanner;
 use Gcego\Registry\Discovery\DiscoveryPath;
+use Gcego\Registry\Discovery\DiscoveryRoots;
 use Gcego\Registry\Kinds\DefinitionKinds;
 use Gcego\Registry\Loading\PhpDefinitionLoader;
 use Gcego\Registry\Resolution\DefinitionResolver;
@@ -44,11 +45,15 @@ final class RegistryServiceProvider extends ServiceProvider implements PackageIn
         });
 
         $this->app->singleton(DefinitionKinds::class);
+        $this->app->singleton(DiscoveryRoots::class);
 
+        // Roots from configuration first, then roots packages added with DiscoveryRoots::add().
         $this->app->singleton(DefinitionDiscovery::class, static function (Application $app): DefinitionDiscovery {
             $config = $app->make(RegistryConfig::class);
+            $registered = $app->make(DiscoveryRoots::class);
+            $registered->freeze();
 
-            return new DefinitionDiscovery($config->activeRoots(), new DirectoryScanner($config->ignoredDirectories));
+            return new DefinitionDiscovery($config->activeRoots($registered->all()), new DirectoryScanner($config->ignoredDirectories));
         });
 
         $this->app->singleton(PhpDefinitionLoader::class, static fn (Application $app): PhpDefinitionLoader => new PhpDefinitionLoader(
@@ -84,12 +89,7 @@ final class RegistryServiceProvider extends ServiceProvider implements PackageIn
 
     public function descriptor(): PackageDescriptor
     {
-        return new PackageDescriptor(
-            'gcego/registry',
-            requires: ['gcego/core'],
-            capabilities: ['registry'],
-            description: 'Definition discovery, registration and resolution.',
-        );
+        return new PackageDescriptor('gcego/registry', requires: ['gcego/core'], capabilities: ['registry'], description: 'Definition discovery, registration and resolution.');
     }
 
     public static function configPath(): string

@@ -10,5 +10,7 @@ phpstan.neon
 /.vscode
 /README.md
 /docs/
-/LICENSE.md
 /CHANGELOG.md
+
+# Local CI configuration (publishing workflows needs extra sync-token permissions)
+/.github/

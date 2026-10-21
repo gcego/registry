@@ -55,8 +55,10 @@ it('detects corruption', function (string $contents, string $reason): void {
     'syntax error' => ['<?php return [', 'unreadable PHP'],
     'not an array' => ['<?php return "x";', 'not an array'],
     'wrong format' => ['<?php return ["format" => 99];', 'unsupported format'],
-    'missing fields' => ['<?php return ["format" => 1];', 'missing fields'],
-    'checksum' => ['<?php return ["format" => 1, "generated_at" => "x", "fingerprint" => "f", "definitions" => [], "checksum" => "bad"];', 'checksum mismatch'],
+    'previous format' => ['<?php return ["format" => 1];', 'unsupported format'],
+    'missing fields' => ['<?php return ["format" => 2];', 'missing fields'],
+    'invalid dependencies' => ['<?php return ["format" => 2, "generated_at" => "x", "fingerprint" => "f", "dependencies" => [1 => "h"], "definitions" => [], "checksum" => "c"];', 'invalid dependencies'],
+    'checksum' => ['<?php return ["format" => 2, "generated_at" => "x", "fingerprint" => "f", "dependencies" => [], "definitions" => [], "checksum" => "bad"];', 'checksum mismatch'],
 ]);
 
 it('detects tampered definitions', function (): void {
