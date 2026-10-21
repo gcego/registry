@@ -89,13 +89,15 @@ final readonly class RegistryConfig
     }
 
     /**
-     * Roots that take part in discovery (none when discovery is disabled).
+     * Roots that take part in discovery: the configured ones, then $registered
+     * (from DiscoveryRoots). None when discovery is disabled.
      *
+     * @param  list<DiscoveryPath>  $registered
      * @return list<DiscoveryPath>
      */
-    public function activeRoots(): array
+    public function activeRoots(array $registered = []): array
     {
-        return $this->discoveryEnabled ? $this->roots : [];
+        return $this->discoveryEnabled ? [...$this->roots, ...$registered] : [];
     }
 
     /**

@@ -5,9 +5,11 @@ declare(strict_types=1);
 namespace Gcego\Registry;
 
 use Gcego\Registry\Cache\CacheStatus;
+use Gcego\Registry\Cache\DependencyFiles;
 use Gcego\Registry\Cache\Manifest;
 use Gcego\Registry\Contracts\RegistryCache;
 use Gcego\Registry\Discovery\DefinitionDiscovery;
+use Gcego\Registry\Discovery\DiscoveredFile;
 use Gcego\Registry\Discovery\DiscoveryResult;
 use Gcego\Registry\Exceptions\RegistryCacheException;
 use Gcego\Registry\Exceptions\RegistryException;
@@ -19,13 +21,16 @@ use Gcego\Registry\Registration\RegistrationResult;
  * Decides where the index comes from and keeps the cache honest.
  *
  * - Cache disabled: discover, load and validate on first use (development).
- * - Cache enabled, verify on: rescan the roots (directory listing and stat
- *   only, no includes) and rebuild when the fingerprint changed.
+ * - Cache enabled, verify on: rescan the roots and hash the discovered and
+ *   dependency files (no includes); rebuild when anything changed.
  * - Cache enabled, verify off (production): read the manifest; never scan.
  * - Missing or corrupt cache: rebuild ("build") or throw ("fail").
  *
- * Rebuilds are always strict and happen under the cache lock; a second
- * process waiting for the lock reuses the manifest the first one wrote.
+ * Rebuilds happen under the cache lock; a second process waiting for the
+ * lock reuses the manifest the first one wrote. Only a complete index is
+ * written: with gcego-registry.strict off, a rebuild that skipped invalid
+ * definitions serves its partial index without caching it. A failed rebuild
+ * never removes the existing manifest.
  */
 final readonly class RegistryManager
 {
@@ -54,7 +59,7 @@ final readonly class RegistryManager
         if ($manifest !== null && $this->config->verifyCache) {
             $discovery = $this->discovery->discover();
 
-            if (! hash_equals($manifest->fingerprint, $this->fingerprint($discovery))) {
+            if (! $this->isFresh($manifest, $discovery)) {
                 $manifest = null;
             }
         }
@@ -68,29 +73,49 @@ final readonly class RegistryManager
             throw RegistryCacheException::missing($this->cache->path());
         }
 
-        return $this->rebuild($discovery);
+        return $this->rebuild($discovery, strict: $this->config->strict);
     }
 
     /**
-     * Discover, load, validate (strictly) and write the cache. Safe to run concurrently.
+     * Discover, load, validate and write the cache. Safe to run concurrently.
+     *
+     * The existing manifest is replaced atomically and only after a successful
+     * build, so it keeps serving if the build fails.
+     *
+     * @param  bool  $force  Build even when the existing manifest is up to date (deployments).
+     * @param  bool  $strict  Throw on the first invalid definition; otherwise skip it and do not write the cache.
      *
      * @throws RegistryException
      */
-    public function rebuild(?DiscoveryResult $discovery = null): LoadedIndex
+    public function rebuild(?DiscoveryResult $discovery = null, bool $force = false, bool $strict = true): LoadedIndex
     {
-        return $this->cache->locked(function () use ($discovery): LoadedIndex {
+        return $this->cache->locked(function () use ($discovery, $force, $strict): LoadedIndex {
             $discovery ??= $this->discovery->discover();
-            $fingerprint = $this->fingerprint($discovery);
-            $existing = $this->readOrNull();
 
-            if ($existing !== null && hash_equals($existing->fingerprint, $fingerprint)) {
-                return new LoadedIndex($existing->index, LoadedIndex::FromCache);
+            if (! $force) {
+                $existing = $this->readOrNull();
+
+                if ($existing !== null && $this->isFresh($existing, $discovery)) {
+                    return new LoadedIndex($existing->index, LoadedIndex::FromCache);
+                }
             }
 
-            $result = $this->build($discovery, true);
-            $this->cache->write(new Manifest($result->index, $fingerprint, gmdate('Y-m-d\TH:i:s\Z')));
+            $includedBefore = get_included_files();
+            $result = $this->build($discovery, $strict);
 
-            return new LoadedIndex($result->index, LoadedIndex::FromDiscovery, $result->definitions);
+            if ($result->failures === []) {
+                $dependencies = DependencyFiles::collect(
+                    $includedBefore,
+                    $result,
+                    $this->config->providers,
+                    $this->kinds,
+                    array_map(static fn (DiscoveredFile $file): string => $file->path, $discovery->files),
+                );
+
+                $this->cache->write(new Manifest($result->index, $this->fingerprint($discovery), gmdate('Y-m-d\TH:i:s\Z'), $dependencies));
+            }
+
+            return new LoadedIndex($result->index, LoadedIndex::FromDiscovery, $result->definitions, $result->failures);
         });
     }
 
@@ -133,7 +158,7 @@ final readonly class RegistryManager
 
         if ($checkFreshness) {
             try {
-                $fresh = hash_equals($manifest->fingerprint, $this->fingerprint($this->discovery->discover()));
+                $fresh = $this->isFresh($manifest, $this->discovery->discover());
             } catch (RegistryException $exception) {
                 $problem = $exception->getMessage();
             }
@@ -159,6 +184,11 @@ final readonly class RegistryManager
             'providers:'.implode(',', $this->config->providers),
             'kinds:'.implode(',', $this->kinds->ids()),
         ]));
+    }
+
+    private function isFresh(Manifest $manifest, DiscoveryResult $discovery): bool
+    {
+        return hash_equals($manifest->fingerprint, $this->fingerprint($discovery)) && $manifest->dependenciesUnchanged();
     }
 
     private function readOrNull(): ?Manifest

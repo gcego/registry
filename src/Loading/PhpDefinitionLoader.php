@@ -239,7 +239,7 @@ final readonly class PhpDefinitionLoader implements DefinitionLoader
         foreach ($this->trustedRoots as $root) {
             $directory = realpath($root);
 
-            if ($directory !== false && is_dir($directory) && str_starts_with($realPath, rtrim($directory, '/').'/')) {
+            if ($directory !== false && is_dir($directory) && str_starts_with($realPath, rtrim($directory, '\\/').DIRECTORY_SEPARATOR)) {
                 return true;
             }
         }

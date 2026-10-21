@@ -4,6 +4,8 @@ declare(strict_types=1);
 
 namespace Gcego\Registry\Discovery;
 
+use Gcego\Registry\Cache\DependencyFiles;
+
 /**
  * The outcome of scanning the discovery roots, in deterministic order.
  */
@@ -23,14 +25,15 @@ final readonly class DiscoveryResult
     ) {}
 
     /**
-     * A stable hash of what was discovered and when it last changed (paths, sizes, modification times).
+     * A stable hash of what was discovered and its content (paths and file hashes).
+     *
+     * Content is hashed rather than compared by size and modification time,
+     * which misses edits made within the same second that keep the size.
      */
     public function fingerprint(): string
     {
         $parts = array_map(static function (DiscoveredFile $file): string {
-            $stat = @stat($file->path);
-
-            return implode('|', [$file->root->kind, $file->root->scope ?? '', $file->path, $stat === false ? 0 : $stat['size'], $stat === false ? 0 : $stat['mtime']]);
+            return implode('|', [$file->root->kind, $file->root->scope ?? '', $file->path, DependencyFiles::hash($file->path)]);
         }, $this->files);
 
         // PHP files that are not entrypoints are supporting code an entrypoint may include
@@ -39,8 +42,7 @@ final readonly class DiscoveryResult
 
         foreach ($this->skipped as $skipped) {
             if (str_starts_with($skipped['reason'], 'not an entrypoint') && str_ends_with($skipped['path'], '.php') && ! isset($supporting[$skipped['path']])) {
-                $stat = @stat($skipped['path']);
-                $supporting[$skipped['path']] = implode('|', [$skipped['path'], $stat === false ? 0 : $stat['size'], $stat === false ? 0 : $stat['mtime']]);
+                $supporting[$skipped['path']] = $skipped['path'].'|'.DependencyFiles::hash($skipped['path']);
             }
         }
 

@@ -26,4 +26,9 @@ class RegistryCacheException extends RuntimeException implements RegistryExcepti
     {
         return new self(sprintf('The registry cache %s could not be written. Make its directory writable.', $path), 0, $previous);
     }
+
+    public static function unlockable(string $path): self
+    {
+        return new self(sprintf('The registry cache lock %s could not be acquired. Keep the cache on a filesystem that supports flock().', $path));
+    }
 }

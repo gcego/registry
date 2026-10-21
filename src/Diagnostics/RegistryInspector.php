@@ -4,6 +4,7 @@ declare(strict_types=1);
 
 namespace Gcego\Registry\Diagnostics;
 
+use Gcego\Registry\Discovery\DiscoveryRoots;
 use Gcego\Registry\Exceptions\RegistryException;
 use Gcego\Registry\Kinds\DefinitionKinds;
 use Gcego\Registry\RegistryConfig;
@@ -24,6 +25,7 @@ final readonly class RegistryInspector
         private RegistryManager $manager,
         private RegistryConfig $config,
         private DefinitionKinds $kinds,
+        private DiscoveryRoots $registeredRoots,
     ) {}
 
     public function inspect(): RegistryReport
@@ -31,7 +33,7 @@ final readonly class RegistryInspector
         $diagnostics = [];
         $roots = [];
 
-        foreach ($this->config->roots as $root) {
+        foreach ([...$this->config->roots, ...$this->registeredRoots->all()] as $root) {
             $exists = is_dir($root->path);
             $registered = $this->kinds->has($root->kind);
             $roots[] = [...$root->toArray(), 'exists' => $exists, 'kindRegistered' => $registered];

@@ -1,13 +1,13 @@
 {
     "name": "gcego/registry",
-    "description": "Definition discovery, registration, resolution and production caching for GCEGO Admin Studio.",
+    "description": "Definition discovery, registration, resolution and production caching for Laravel.",
     "type": "library",
     "keywords": [
         "gcego",
         "registry",
         "discovery",
         "laravel",
-        "admin"
+        "definitions"
     ],
     "homepage": "https://github.com/gcego/registry",
     "license": "MIT",
